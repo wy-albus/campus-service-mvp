@@ -1,11 +1,7 @@
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
-import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { PrismaClient } from '@prisma/client';
 
-process.chdir(dirname(fileURLToPath(import.meta.url)));
-
-const { PrismaClient } = await import('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
