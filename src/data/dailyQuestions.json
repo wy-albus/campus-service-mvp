@@ -1,0 +1,71 @@
+[
+  {
+    "id": "math-001",
+    "subject": "数学",
+    "grade": "高三",
+    "difficulty": "基础",
+    "question": "已知函数 f(x)=x^2-4x+3，求 f(x) 的最小值。",
+    "options": ["-1", "0", "1", "3"],
+    "answer": "-1",
+    "analysis": "配方得 f(x)=(x-2)^2-1，所以当 x=2 时函数取得最小值 -1。"
+  },
+  {
+    "id": "english-001",
+    "subject": "英语",
+    "grade": "高二",
+    "difficulty": "基础",
+    "question": "Choose the best answer: The book is worth ____ twice.",
+    "options": ["read", "reading", "to read", "to be read"],
+    "answer": "reading",
+    "analysis": "be worth doing 是固定搭配，表示“值得做某事”。"
+  },
+  {
+    "id": "physics-001",
+    "subject": "物理",
+    "grade": "高一",
+    "difficulty": "中等",
+    "question": "物体做匀加速直线运动，初速度为 2 m/s，加速度为 3 m/s²，4 秒后的速度是多少？",
+    "options": ["8 m/s", "12 m/s", "14 m/s", "16 m/s"],
+    "answer": "14 m/s",
+    "analysis": "根据 v=v0+at，v=2+3×4=14 m/s。"
+  },
+  {
+    "id": "chemistry-001",
+    "subject": "化学",
+    "grade": "高一",
+    "difficulty": "基础",
+    "question": "下列物质中，属于电解质的是哪一个？",
+    "options": ["蔗糖", "乙醇", "氯化钠", "二氧化碳"],
+    "answer": "氯化钠",
+    "analysis": "氯化钠在水溶液或熔融状态下能够导电，属于电解质。"
+  },
+  {
+    "id": "biology-001",
+    "subject": "生物",
+    "grade": "高二",
+    "difficulty": "中等",
+    "question": "DNA 复制过程中遵循的基本原则是什么？",
+    "answer": "碱基互补配对原则。",
+    "analysis": "DNA 复制时，A 与 T 配对，G 与 C 配对，这是保证遗传信息准确传递的重要基础。"
+  },
+  {
+    "id": "chinese-001",
+    "subject": "语文",
+    "grade": "高三",
+    "difficulty": "基础",
+    "question": "“落霞与孤鹜齐飞，秋水共长天一色”出自哪篇文章？",
+    "options": ["《岳阳楼记》", "《滕王阁序》", "《赤壁赋》", "《兰亭集序》"],
+    "answer": "《滕王阁序》",
+    "analysis": "该句出自王勃《滕王阁序》，是写景名句。"
+  },
+  {
+    "id": "history-001",
+    "subject": "历史",
+    "grade": "高一",
+    "difficulty": "基础",
+    "question": "中国近代史开端通常以哪一历史事件为标志？",
+    "options": ["洋务运动", "鸦片战争", "戊戌变法", "辛亥革命"],
+    "answer": "鸦片战争",
+    "analysis": "1840 年鸦片战争后，中国逐步沦为半殖民地半封建社会，通常被视为中国近代史的开端。"
+  }
+]

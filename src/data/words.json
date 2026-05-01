@@ -1,0 +1,66 @@
+[
+  {
+    "id": "word-001",
+    "word": "discipline",
+    "phonetic": "/ˈdɪsəplɪn/",
+    "meaning": "n. 纪律；训练；学科",
+    "example": "Self-discipline helps students keep a steady study rhythm.",
+    "translation": "自律能帮助学生保持稳定的学习节奏。"
+  },
+  {
+    "id": "word-002",
+    "word": "efficient",
+    "phonetic": "/ɪˈfɪʃnt/",
+    "meaning": "adj. 高效的；效率高的",
+    "example": "An efficient review plan saves time before exams.",
+    "translation": "高效的复习计划能在考试前节省时间。"
+  },
+  {
+    "id": "word-003",
+    "word": "priority",
+    "phonetic": "/praɪˈɔːrəti/",
+    "meaning": "n. 优先事项；优先权",
+    "example": "Finishing the key tasks should be your first priority.",
+    "translation": "完成关键任务应该是你的首要事项。"
+  },
+  {
+    "id": "word-004",
+    "word": "review",
+    "phonetic": "/rɪˈvjuː/",
+    "meaning": "v./n. 复习；回顾；评论",
+    "example": "It is useful to review notes after class.",
+    "translation": "课后复习笔记很有用。"
+  },
+  {
+    "id": "word-005",
+    "word": "concentrate",
+    "phonetic": "/ˈkɑːnsntreɪt/",
+    "meaning": "v. 集中注意力",
+    "example": "Try to concentrate on one subject at a time.",
+    "translation": "试着一次只专注于一门学科。"
+  },
+  {
+    "id": "word-006",
+    "word": "progress",
+    "phonetic": "/ˈprɑːɡres/",
+    "meaning": "n. 进步；进展",
+    "example": "Small daily progress will become a big change.",
+    "translation": "每天一点小进步，最终会成为很大的改变。"
+  },
+  {
+    "id": "word-007",
+    "word": "memorize",
+    "phonetic": "/ˈmeməraɪz/",
+    "meaning": "v. 记住；熟记",
+    "example": "Do not only memorize formulas; understand how to use them.",
+    "translation": "不要只背公式，还要理解如何使用它们。"
+  },
+  {
+    "id": "word-008",
+    "word": "confidence",
+    "phonetic": "/ˈkɑːnfɪdəns/",
+    "meaning": "n. 信心；自信",
+    "example": "Practice builds confidence before a test.",
+    "translation": "练习能在考试前建立信心。"
+  }
+]

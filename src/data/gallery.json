@@ -1,0 +1,34 @@
+[
+  {
+    "id": "morning-yard",
+    "title": "清晨操场",
+    "author": "同学投稿占位",
+    "description": "适合用作考试时钟背景的明亮校园氛围图。",
+    "image": "linear-gradient(135deg, #dbeafe 0%, #fef3c7 52%, #dcfce7 100%)",
+    "license": "投稿授权占位"
+  },
+  {
+    "id": "library-window",
+    "title": "图书馆窗边",
+    "author": "维护者示例",
+    "description": "安静、克制的学习场景占位背景。",
+    "image": "linear-gradient(135deg, #f8fafc 0%, #bfdbfe 48%, #86efac 100%)",
+    "license": "示例数据"
+  },
+  {
+    "id": "sunset-campus",
+    "title": "校园晚霞",
+    "author": "同学投稿占位",
+    "description": "适合晚自习和倒计时页面使用的温暖背景。",
+    "image": "linear-gradient(135deg, #fed7aa 0%, #fef9c3 50%, #a7f3d0 100%)",
+    "license": "投稿授权占位"
+  },
+  {
+    "id": "quiet-classroom",
+    "title": "安静教室",
+    "author": "维护者示例",
+    "description": "用抽象色块模拟教室光线，后续可替换为真实授权照片。",
+    "image": "linear-gradient(135deg, #e0f2fe 0%, #f8fafc 45%, #fef08a 100%)",
+    "license": "示例数据"
+  }
+]
