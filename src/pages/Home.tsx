@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import type { PageId } from '../App';
 import { formatClock } from '../utils/time';
 import { Badge } from '../components/ui/Badge';
-import { GlassPanel } from '../components/ui/GlassPanel';
 
 interface HomeProps {
   onNavigate: (page: PageId) => void;
@@ -42,8 +41,7 @@ export function Home({ onNavigate: _onNavigate }: HomeProps) {
 
   return (
     <motion.div className="space-y-5" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-      <GlassPanel className="relative overflow-visible p-6 md:p-8 lg:p-10">
-        <div className="absolute inset-0 rounded-[32px] bg-[radial-gradient(circle_at_26%_12%,rgba(255,255,255,0.075),transparent_32%),linear-gradient(135deg,rgba(0,0,0,0.12),rgba(0,0,0,0.025)_46%,rgba(255,255,255,0.035))]" />
+      <section className="relative overflow-visible px-2 py-4 md:px-4 md:py-6 lg:px-6">
         <div className="relative z-10 grid gap-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-5xl">
@@ -51,7 +49,7 @@ export function Home({ onNavigate: _onNavigate }: HomeProps) {
               <div className="mt-5 flex flex-wrap items-end gap-x-8 gap-y-3">
                 <h1 className="text-4xl font-semibold leading-none text-ink md:text-6xl lg:text-7xl">{heroTitle}</h1>
                 {isSeniorThree && (
-                  <div className="pb-1 text-2xl font-semibold text-campus-300 md:text-4xl lg:text-5xl">
+                  <div className="pb-1 text-2xl font-semibold text-white/90 drop-shadow-[0_2px_16px_rgba(0,0,0,0.32)] md:text-4xl lg:text-5xl">
                     约 {daysLeft} 天
                   </div>
                 )}
@@ -131,7 +129,7 @@ export function Home({ onNavigate: _onNavigate }: HomeProps) {
             />
           </section>
         </div>
-      </GlassPanel>
+      </section>
     </motion.div>
   );
 }
