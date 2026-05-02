@@ -52,6 +52,8 @@ export function Forum() {
   const [reportsOpen, setReportsOpen] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
   const [message, setMessage] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN';
   const filteredPosts = useMemo(() => posts, [posts]);
@@ -85,6 +87,10 @@ export function Forum() {
   }, []);
 
   const submitAuth = async () => {
+    if (authLoading) return;
+    setAuthError('');
+    setMessage('');
+    setAuthLoading(true);
     try {
       const path = authMode === 'register' ? '/auth/register' : '/auth/login';
       const body = authMode === 'register' ? authForm : { email: authForm.email, password: authForm.password };
@@ -95,7 +101,11 @@ export function Forum() {
       setAuthForm(emptyAuth);
       setMessage('登录成功');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : '登录失败');
+      const errorMessage = error instanceof Error ? error.message : '登录失败';
+      setAuthError(errorMessage);
+      setMessage(errorMessage);
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -297,13 +307,34 @@ export function Forum() {
         </section>
       )}
 
-      <Dialog open={Boolean(authMode)} title={authMode === 'register' ? '注册账号' : '登录论坛'} onClose={() => setAuthMode(null)}>
-        <div className="space-y-4">
-          {authMode === 'register' && <Input value={authForm.username} onChange={(e) => setAuthForm({ ...authForm, username: e.target.value })} placeholder="用户名" />}
+      <Dialog
+        open={Boolean(authMode)}
+        title={authMode === 'register' ? '注册账号' : '登录论坛'}
+        onClose={() => {
+          if (authLoading) return;
+          setAuthMode(null);
+          setAuthError('');
+        }}
+      >
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submitAuth();
+          }}
+        >
+          {authMode === 'register' && <Input value={authForm.username} onChange={(e) => setAuthForm({ ...authForm, username: e.target.value })} placeholder="用户名" autoComplete="username" />}
           <Input value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} placeholder="邮箱" />
           <Input type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} placeholder="密码" />
-          <Button onClick={submitAuth}>{authMode === 'register' ? '注册并登录' : '登录'}</Button>
-        </div>
+          {authError && (
+            <div className="rounded-2xl border border-amber-200/20 bg-amber-300/10 px-4 py-3 text-sm leading-6 text-amber-50">
+              {authError}
+            </div>
+          )}
+          <Button type="submit" disabled={authLoading}>
+            {authLoading ? '正在提交...' : authMode === 'register' ? '注册并登录' : '登录'}
+          </Button>
+        </form>
       </Dialog>
 
       <Dialog open={editorOpen} title="发布帖子" onClose={() => setEditorOpen(false)}>

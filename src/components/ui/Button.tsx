@@ -21,9 +21,10 @@ const sizes = {
   icon: 'h-11 w-11 p-0',
 };
 
-export function Button({ className, variant = 'primary', size = 'md', children, ...props }: ButtonProps) {
+export function Button({ className, variant = 'primary', size = 'md', children, type = 'button', ...props }: ButtonProps) {
   return (
     <button
+      type={type}
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition duration-200 ease-out hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50',
         variants[variant],
