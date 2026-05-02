@@ -89,7 +89,17 @@ function excerpt(content: string) {
 }
 
 function forumCard(className = '') {
-  return `rounded-[24px] border border-white/55 bg-white/[0.88] text-slate-900 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-md ${className}`;
+  return `rounded-[24px] border border-white/70 bg-white/[0.92] text-slate-900 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-md ${className}`;
+}
+
+function lightButtonClass(className = '') {
+  return `inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:border-emerald-500/30 hover:text-emerald-800 ${className}`;
+}
+
+function tagPillClass(active = false) {
+  return active
+    ? 'rounded-full border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(5,150,105,0.24)] transition'
+    : 'rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-emerald-500/35 hover:bg-emerald-50 hover:text-emerald-800';
 }
 
 export function Forum() {
@@ -350,17 +360,13 @@ export function Forum() {
             <option value="latest_reply">最新回复</option>
             <option value="views">最多浏览</option>
           </select>
-          <Button variant="secondary" onClick={loadPosts}>搜索</Button>
+          <button className={lightButtonClass()} onClick={loadPosts}>搜索</button>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {tagFilters.map((tag) => (
             <button
               key={tag}
-              className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
-                activeTag === tag
-                  ? 'border-emerald-500/30 bg-emerald-600 text-white'
-                  : 'border-slate-200 bg-white/65 text-slate-600 hover:border-emerald-500/30 hover:text-emerald-700'
-              }`}
+              className={tagPillClass(activeTag === tag)}
               onClick={() => setActiveTag(tag)}
             >
               {tag}
@@ -371,28 +377,28 @@ export function Forum() {
 
       {selectedProfile ? (
         <section className={forumCard('p-6')}>
-          <Button variant="secondary" onClick={() => setSelectedProfile(null)}>
+          <button className={lightButtonClass()} onClick={() => setSelectedProfile(null)}>
             <ArrowLeft size={17} />
             返回论坛
-          </Button>
+          </button>
           <div className="mt-6 grid gap-6 lg:grid-cols-[260px_1fr]">
             <aside className="rounded-[22px] border border-slate-200 bg-white/70 p-5">
               <div className="grid h-20 w-20 place-items-center rounded-3xl bg-emerald-100 text-3xl font-black text-emerald-800">
                 {selectedProfile.username.slice(0, 1)}
               </div>
               <h2 className="mt-4 text-2xl font-semibold text-slate-950">{selectedProfile.username}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{selectedProfile.bio}</p>
+              <p className="mt-2 text-sm font-medium leading-6 text-slate-700">{selectedProfile.bio}</p>
               <div className="mt-5 grid grid-cols-2 gap-3 text-center">
                 <div className="rounded-2xl bg-slate-100 p-3">
                   <p className="text-2xl font-black text-slate-950">{selectedProfile.postCount}</p>
-                  <p className="text-xs font-semibold text-slate-500">发帖</p>
+                  <p className="text-xs font-semibold text-slate-700">发帖</p>
                 </div>
                 <div className="rounded-2xl bg-slate-100 p-3">
                   <p className="text-2xl font-black text-slate-950">{selectedProfile.replyCount}</p>
-                  <p className="text-xs font-semibold text-slate-500">回复</p>
+                  <p className="text-xs font-semibold text-slate-700">回复</p>
                 </div>
               </div>
-              <p className="mt-4 text-sm text-slate-500">注册于 {formatDate(selectedProfile.createdAt)}</p>
+              <p className="mt-4 text-sm font-medium text-slate-600">注册于 {formatDate(selectedProfile.createdAt)}</p>
             </aside>
             <div>
               <h3 className="text-xl font-semibold text-slate-950">最近发布的帖子</h3>
@@ -401,25 +407,25 @@ export function Forum() {
                   <button className="rounded-2xl border border-slate-200 bg-white/70 p-4 text-left transition hover:bg-white" key={post.id} onClick={() => loadPost(post.id)}>
                     <Badge tone="green">{post.tag}</Badge>
                     <h4 className="mt-3 text-lg font-semibold text-slate-950">{post.title}</h4>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{excerpt(post.content)}</p>
+                    <p className="mt-2 text-sm font-medium leading-6 text-slate-700">{excerpt(post.content)}</p>
                   </button>
                 ))}
-                {!selectedProfile.recentPosts.length && <p className="rounded-2xl bg-slate-100 p-4 text-sm text-slate-500">暂时还没有发布帖子。</p>}
+                {!selectedProfile.recentPosts.length && <p className="rounded-2xl bg-slate-100 p-4 text-sm font-medium text-slate-700">暂时还没有发布帖子。</p>}
               </div>
             </div>
           </div>
         </section>
       ) : selectedPost ? (
         <section className={forumCard('p-6')}>
-          <Button variant="secondary" onClick={() => setSelectedPost(null)}>
+          <button className={lightButtonClass()} onClick={() => setSelectedPost(null)}>
             <ArrowLeft size={17} />
             返回列表
-          </Button>
+          </button>
           <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
             <div>
               <Badge tone="green">{selectedPost.tag}</Badge>
               <h2 className="mt-4 text-3xl font-semibold text-slate-950">{selectedPost.title}</h2>
-              <p className="mt-2 text-sm text-slate-500">
+              <p className="mt-2 text-sm font-medium text-slate-600">
                 <button className="font-semibold text-emerald-700 hover:text-emerald-900" onClick={() => loadProfile(selectedPost.author.id)}>
                   {selectedPost.author.username}
                 </button>
@@ -427,14 +433,14 @@ export function Forum() {
               </p>
             </div>
             {isAdmin && (
-              <Button variant="subtle" onClick={() => deletePost(selectedPost.id)}>
+              <button className={lightButtonClass('text-red-700 hover:border-red-300 hover:text-red-800')} onClick={() => deletePost(selectedPost.id)}>
                 <Trash2 size={17} />
                 删除帖子
-              </Button>
+              </button>
             )}
           </div>
           <p className="mt-6 whitespace-pre-wrap rounded-[22px] border border-slate-200 bg-white/70 p-5 text-base leading-8 text-slate-700">{selectedPost.content}</p>
-          <div className="mt-5 flex flex-wrap gap-3 text-sm font-semibold text-slate-500">
+          <div className="mt-5 flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
             <span className="inline-flex items-center gap-1"><Eye size={15} /> {selectedPost.viewCount}</span>
             <span className="inline-flex items-center gap-1"><MessageSquare size={15} /> {selectedPost.commentCount}</span>
             <span className="inline-flex items-center gap-1"><Heart size={15} /> {selectedPost.likeCount}</span>
@@ -444,10 +450,10 @@ export function Forum() {
               <Heart size={17} />
               {liked ? '已点赞' : '点赞'} {selectedPost.likeCount}
             </Button>
-            <Button variant="subtle" onClick={() => openReport('POST', selectedPost.id)}>
+            <button className={lightButtonClass()} onClick={() => openReport('POST', selectedPost.id)}>
               <AlertTriangle size={17} />
               举报
-            </Button>
+            </button>
           </div>
 
           <div className="mt-8 space-y-4">
@@ -468,7 +474,7 @@ export function Forum() {
                 </>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm text-slate-500">登录后可以参与回复。</p>
+                  <p className="text-sm font-medium text-slate-700">登录后可以参与回复。</p>
                   <Button onClick={() => setAuthMode('login')}>登录后回复</Button>
                 </div>
               )}
@@ -476,15 +482,15 @@ export function Forum() {
             {selectedPost.comments.map((comment) => (
               <article className="rounded-2xl border border-slate-200 bg-white/75 p-4" key={comment.id}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm font-medium text-slate-600">
                     <button className="font-semibold text-emerald-700 hover:text-emerald-900" onClick={() => loadProfile(comment.author.id)}>
                       {comment.author.username}
                     </button>
                     <span> · {formatTime(comment.createdAt)}</span>
                   </p>
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => openReport('COMMENT', comment.id)}>举报</Button>
-                    {isAdmin && <Button variant="ghost" size="sm" onClick={() => deleteComment(comment.id)}>删除</Button>}
+                    <button className={lightButtonClass('h-9 px-3 text-xs')} onClick={() => openReport('COMMENT', comment.id)}>举报</button>
+                    {isAdmin && <button className={lightButtonClass('h-9 px-3 text-xs text-red-700 hover:border-red-300 hover:text-red-800')} onClick={() => deleteComment(comment.id)}>删除</button>}
                   </div>
                 </div>
                 <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{comment.content}</p>
@@ -503,10 +509,10 @@ export function Forum() {
                     <button className="mt-3 block text-left text-2xl font-semibold text-slate-950 hover:text-emerald-800" onClick={() => loadPost(post.id)}>
                       {post.title}
                     </button>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{excerpt(post.content)}</p>
+                    <p className="mt-2 text-sm font-medium leading-6 text-slate-700">{excerpt(post.content)}</p>
                   </div>
                 </div>
-                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
+                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium text-slate-600">
                   <button className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-900" onClick={() => loadProfile(post.author.id)}>
                     <UserRound size={15} />
                     {post.author.username}
@@ -521,7 +527,7 @@ export function Forum() {
             {!posts.length && (
               <div className={forumCard('p-8 text-center')}>
                 <p className="text-lg font-semibold text-slate-950">没有找到相关帖子</p>
-                <p className="mt-2 text-sm text-slate-500">换个关键词或分类试试看。</p>
+                <p className="mt-2 text-sm font-medium text-slate-700">换个关键词或分类试试看。</p>
               </div>
             )}
           </section>
@@ -533,7 +539,7 @@ export function Forum() {
                 {activePosts.map((post) => (
                   <button className="rounded-2xl bg-slate-100/80 p-3 text-left transition hover:bg-white" key={post.id} onClick={() => loadPost(post.id)}>
                     <p className="text-sm font-semibold text-slate-900">{post.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">{post.commentCount} 回复 · {post.viewCount} 浏览</p>
+                    <p className="mt-1 text-xs font-medium text-slate-600">{post.commentCount} 回复 · {post.viewCount} 浏览</p>
                   </button>
                 ))}
               </div>
@@ -542,7 +548,7 @@ export function Forum() {
               <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-950"><Tags size={18} /> 热门 tag</h3>
               <div className="mt-4 flex flex-wrap gap-2">
                 {tagStats.map(({ tag, count }) => (
-                  <button className="rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-emerald-700" key={tag} onClick={() => setActiveTag(tag)}>
+                  <button className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-[0_4px_14px_rgba(15,23,42,0.06)] hover:border-emerald-500/35 hover:text-emerald-800" key={tag} onClick={() => setActiveTag(tag)}>
                     {tag} {count ? count : ''}
                   </button>
                 ))}
@@ -550,7 +556,7 @@ export function Forum() {
             </section>
             <section className={forumCard('p-5')}>
               <h3 className="text-lg font-semibold text-slate-950">发帖须知</h3>
-              <div className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+              <div className="mt-3 space-y-2 text-sm font-medium leading-6 text-slate-700">
                 <p>标题尽量具体，选择合适 tag，方便同学搜索。</p>
                 <p>不要公开他人隐私，不发布攻击性、违法或广告内容。</p>
                 <p>论坛内容仅供校内学习生活交流参考。</p>
