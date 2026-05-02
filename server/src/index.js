@@ -6,6 +6,7 @@ import { postsRouter } from './routes/posts.js';
 import { commentsRouter } from './routes/comments.js';
 import { reportsRouter } from './routes/reports.js';
 import { adminRouter } from './routes/admin.js';
+import { usersRouter } from './routes/users.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -22,6 +23,7 @@ app.use('/api/posts', postsRouter);
 app.use('/api/comments', commentsRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/users', usersRouter);
 
 app.use((error, _req, res, _next) => {
   console.error(error);

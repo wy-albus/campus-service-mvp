@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../db.js';
 import { optionalAuth, requireAuth } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
-import { commentSchema, parseBody, postSchema } from '../utils/validators.js';
+import { commentSchema, forumTags, parseBody, postSchema } from '../utils/validators.js';
 
 export const postsRouter = Router();
 
@@ -10,6 +10,8 @@ const postSelect = {
   id: true,
   title: true,
   content: true,
+  tag: true,
+  viewCount: true,
   likeCount: true,
   commentCount: true,
   reportCount: true,
@@ -22,16 +24,28 @@ postsRouter.get('/', async (req, res, next) => {
   try {
     const page = Math.max(Number(req.query.page || 1), 1);
     const pageSize = Math.min(Math.max(Number(req.query.pageSize || 10), 1), 50);
-    const q = String(req.query.q || '').trim();
+    const q = String(req.query.search || req.query.q || '').trim();
+    const tag = String(req.query.tag || '').trim();
+    const sort = String(req.query.sort || 'latest');
     const where = {
       isDeleted: false,
-      ...(q ? { OR: [{ title: { contains: q } }, { content: { contains: q } }] } : {}),
+      ...(tag && forumTags.includes(tag) ? { tag } : {}),
+      ...(q
+        ? {
+            OR: [
+              { title: { contains: q, mode: 'insensitive' } },
+              { content: { contains: q, mode: 'insensitive' } },
+              { author: { username: { contains: q, mode: 'insensitive' } } },
+            ],
+          }
+        : {}),
     };
+    const orderBy = sort === 'views' ? { viewCount: 'desc' } : sort === 'latest_reply' ? { updatedAt: 'desc' } : { createdAt: 'desc' };
     const [items, total] = await Promise.all([
       prisma.post.findMany({
         where,
         select: postSelect,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
@@ -59,21 +73,26 @@ postsRouter.post('/', requireAuth, async (req, res, next) => {
 postsRouter.get('/:id', optionalAuth, async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const post = await prisma.post.findFirst({
-      where: { id, isDeleted: false },
-      select: {
-        ...postSelect,
-        comments: {
-          where: { isDeleted: false },
-          orderBy: { createdAt: 'asc' },
-          select: {
-            id: true,
-            content: true,
-            createdAt: true,
-            author: { select: { id: true, username: true, role: true } },
+    const post = await prisma.$transaction(async (tx) => {
+      const existing = await tx.post.findFirst({ where: { id, isDeleted: false }, select: { id: true } });
+      if (!existing) return null;
+      return tx.post.update({
+        where: { id },
+        data: { viewCount: { increment: 1 } },
+        select: {
+          ...postSelect,
+          comments: {
+            where: { isDeleted: false },
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true,
+              content: true,
+              createdAt: true,
+              author: { select: { id: true, username: true, role: true } },
+            },
           },
         },
-      },
+      });
     });
     if (!post) return res.status(404).json({ error: 'Post not found.' });
     const liked = req.user

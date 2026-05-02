@@ -1,11 +1,24 @@
-import { AlertTriangle, Heart, MessageSquare, Plus, Search, Shield, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Clock,
+  Eye,
+  Heart,
+  MessageSquare,
+  Plus,
+  Search,
+  Send,
+  Shield,
+  Tags,
+  Trash2,
+  UserRound,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Dialog } from '../components/ui/Dialog';
 import { Input } from '../components/ui/Input';
-import { SectionHeader } from '../components/ui/SectionHeader';
 import { apiRequest, clearToken, getToken, setToken, type ForumUser } from '../lib/api';
 
 type Author = { id: number; username: string; role: 'USER' | 'ADMIN' };
@@ -13,10 +26,13 @@ type Post = {
   id: number;
   title: string;
   content: string;
+  tag: ForumTag;
+  viewCount: number;
   likeCount: number;
   commentCount: number;
   reportCount: number;
   createdAt: string;
+  updatedAt: string;
   author: Author;
 };
 type Comment = { id: number; content: string; createdAt: string; author: Author };
@@ -29,23 +45,67 @@ type Report = {
   createdAt: string;
   reporter: { username: string; email: string };
 };
+type UserProfile = {
+  id: number;
+  username: string;
+  role: 'USER' | 'ADMIN';
+  bio: string;
+  createdAt: string;
+  postCount: number;
+  replyCount: number;
+  recentPosts: Array<Omit<Post, 'author' | 'reportCount'>>;
+};
+type SortMode = 'latest' | 'latest_reply' | 'views';
+type ForumTag =
+  | '学习'
+  | '吐槽'
+  | '活动'
+  | '比赛'
+  | '旅游'
+  | '情感'
+  | '美食'
+  | '求助'
+  | '失物招领'
+  | '校园生活'
+  | '经验分享'
+  | '闲聊';
 
+const forumTags: ForumTag[] = ['学习', '吐槽', '活动', '比赛', '旅游', '情感', '美食', '求助', '失物招领', '校园生活', '经验分享', '闲聊'];
+const tagFilters: Array<'全部' | ForumTag> = ['全部', ...forumTags];
 const emptyAuth = { username: '', email: '', password: '' };
+const emptyPostForm = { title: '', content: '', tag: '' as '' | ForumTag };
 
 function formatTime(value: string) {
   return new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function excerpt(content: string) {
+  const compact = content.replace(/\s+/g, ' ').trim();
+  return compact.length > 92 ? `${compact.slice(0, 92)}...` : compact;
+}
+
+function forumCard(className = '') {
+  return `rounded-[24px] border border-white/55 bg-white/[0.88] text-slate-900 shadow-[0_18px_50px_rgba(0,0,0,0.18)] backdrop-blur-md ${className}`;
 }
 
 export function Forum() {
   const [user, setUser] = useState<ForumUser | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPost, setSelectedPost] = useState<(Post & { comments: Comment[] }) | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
   const [liked, setLiked] = useState(false);
-  const [q, setQ] = useState('');
+  const [search, setSearch] = useState('');
+  const [activeTag, setActiveTag] = useState<'全部' | ForumTag>('全部');
+  const [sort, setSort] = useState<SortMode>('latest');
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
   const [authForm, setAuthForm] = useState(emptyAuth);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [postForm, setPostForm] = useState({ title: '', content: '' });
+  const [postForm, setPostForm] = useState(emptyPostForm);
+  const [postError, setPostError] = useState('');
   const [commentText, setCommentText] = useState('');
   const [reportTarget, setReportTarget] = useState<{ targetType: 'POST' | 'COMMENT'; targetId: number } | null>(null);
   const [reportReason, setReportReason] = useState('');
@@ -56,7 +116,15 @@ export function Forum() {
   const [authLoading, setAuthLoading] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN';
-  const filteredPosts = useMemo(() => posts, [posts]);
+  const activePosts = useMemo(() => posts.slice(0, 5), [posts]);
+  const tagStats = useMemo(
+    () =>
+      forumTags.map((tag) => ({
+        tag,
+        count: posts.filter((post) => post.tag === tag).length,
+      })),
+    [posts],
+  );
 
   const loadMe = async () => {
     if (!getToken()) return;
@@ -70,21 +138,37 @@ export function Forum() {
   };
 
   const loadPosts = async () => {
-    const params = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
-    const data = await apiRequest<{ items: Post[] }>(`/posts${params}`);
+    const params = new URLSearchParams();
+    if (search.trim()) params.set('search', search.trim());
+    if (activeTag !== '全部') params.set('tag', activeTag);
+    params.set('sort', sort);
+    const data = await apiRequest<{ items: Post[] }>(`/posts?${params.toString()}`);
     setPosts(data.items);
   };
 
   const loadPost = async (id: number) => {
     const data = await apiRequest<{ post: Post & { comments: Comment[] }; liked: boolean }>(`/posts/${id}`);
     setSelectedPost(data.post);
+    setSelectedProfile(null);
     setLiked(data.liked);
+  };
+
+  const loadProfile = async (id: number) => {
+    const data = await apiRequest<{ user: UserProfile }>(`/users/${id}`);
+    setSelectedProfile(data.user);
+    setSelectedPost(null);
   };
 
   useEffect(() => {
     void loadMe();
-    void loadPosts();
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadPosts();
+    }, 220);
+    return () => window.clearTimeout(timer);
+  }, [search, activeTag, sort]);
 
   const submitAuth = async () => {
     if (authLoading) return;
@@ -110,18 +194,26 @@ export function Forum() {
   };
 
   const createPost = async () => {
+    setPostError('');
     try {
-      await apiRequest('/posts', { method: 'POST', body: JSON.stringify(postForm) });
-      setPostForm({ title: '', content: '' });
+      const data = await apiRequest<{ post: Post }>('/posts', { method: 'POST', body: JSON.stringify(postForm) });
+      setPostForm(emptyPostForm);
       setEditorOpen(false);
+      setMessage('发布成功');
       await loadPosts();
+      await loadPost(data.post.id);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : '发布失败');
+      setPostError(error instanceof Error ? error.message : '发布失败');
     }
   };
 
   const createComment = async () => {
     if (!selectedPost) return;
+    if (!user) {
+      setMessage('请先登录后再回复');
+      setAuthMode('login');
+      return;
+    }
     try {
       await apiRequest(`/posts/${selectedPost.id}/comments`, { method: 'POST', body: JSON.stringify({ content: commentText }) });
       setCommentText('');
@@ -134,6 +226,11 @@ export function Forum() {
 
   const toggleLike = async () => {
     if (!selectedPost) return;
+    if (!user) {
+      setMessage('请先登录后再点赞');
+      setAuthMode('login');
+      return;
+    }
     try {
       const data = await apiRequest<{ liked: boolean; likeCount: number }>(`/posts/${selectedPost.id}/like`, { method: 'POST' });
       setLiked(data.liked);
@@ -179,18 +276,33 @@ export function Forum() {
     await loadReports();
   };
 
+  const openReport = (targetType: 'POST' | 'COMMENT', targetId: number) => {
+    if (!user) {
+      setMessage('请先登录后再举报');
+      setAuthMode('login');
+      return;
+    }
+    setReportTarget({ targetType, targetId });
+  };
+
   return (
     <motion.div className="space-y-6" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-      <SectionHeader
-        eyebrow="Forum"
-        title="校内论坛"
-        description="分享学习经验、校园生活和实用信息。"
-        action={
+      <section className="rounded-[30px] border border-white/10 bg-black/30 p-6 shadow-[0_18px_56px_rgba(0,0,0,0.2)] backdrop-blur-xl md:p-8">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <Badge tone="green">Campus Forum</Badge>
+            <h1 className="mt-4 text-4xl font-semibold leading-tight text-white md:text-6xl">校内论坛</h1>
+            <p className="mt-4 max-w-2xl rounded-2xl bg-black/20 px-4 py-3 text-base font-medium leading-7 text-white/72 backdrop-blur-md">
+              分享学习经验、校园生活和实用信息。这里更像一个轻量校园讨论区，先把话题、回复和资料沉淀起来。
+            </p>
+          </div>
           <div className="flex flex-wrap gap-3">
             {user ? (
               <>
-                <Badge tone="green">{user.username} · {user.role}</Badge>
-                <Button variant="secondary" onClick={() => setEditorOpen(true)}>
+                <button className="rounded-full border border-white/10 bg-white/[0.08] px-3 py-1.5 text-sm font-semibold text-white/85" onClick={() => loadProfile(user.id)}>
+                  {user.username} · {user.role}
+                </button>
+                <Button onClick={() => setEditorOpen(true)}>
                   <Plus size={17} />
                   发布帖子
                 </Button>
@@ -209,32 +321,110 @@ export function Forum() {
               </>
             )}
           </div>
-        }
-      />
+        </div>
+      </section>
 
       {message && (
-        <div className="rounded-2xl border border-white/10 bg-emerald-950/35 px-4 py-3 text-sm text-white/75 backdrop-blur-xl">
+        <div className="rounded-2xl border border-white/10 bg-emerald-950/45 px-4 py-3 text-sm text-white/80 backdrop-blur-xl">
           {message}
         </div>
       )}
 
-      <section className="rounded-[28px] border border-white/10 bg-emerald-950/35 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl">
-        <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+      <section className={forumCard('p-4')}>
+        <div className="grid gap-3 md:grid-cols-[1fr_170px_130px]">
           <label className="relative">
-            <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/45" size={18} />
-            <Input className="w-full pl-11" value={q} onChange={(event) => setQ(event.target.value)} placeholder="搜索标题或内容" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Input
+              className="w-full border-slate-200 bg-white/80 pl-11 text-slate-900 placeholder:text-slate-400 focus:border-emerald-500/50"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="搜索标题、正文或作者"
+            />
           </label>
+          <select
+            className="h-11 rounded-2xl border border-slate-200 bg-white/80 px-4 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500/50"
+            value={sort}
+            onChange={(event) => setSort(event.target.value as SortMode)}
+          >
+            <option value="latest">最新发布</option>
+            <option value="latest_reply">最新回复</option>
+            <option value="views">最多浏览</option>
+          </select>
           <Button variant="secondary" onClick={loadPosts}>搜索</Button>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {tagFilters.map((tag) => (
+            <button
+              key={tag}
+              className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
+                activeTag === tag
+                  ? 'border-emerald-500/30 bg-emerald-600 text-white'
+                  : 'border-slate-200 bg-white/65 text-slate-600 hover:border-emerald-500/30 hover:text-emerald-700'
+              }`}
+              onClick={() => setActiveTag(tag)}
+            >
+              {tag}
+            </button>
+          ))}
         </div>
       </section>
 
-      {selectedPost ? (
-        <section className="rounded-[28px] border border-white/10 bg-emerald-950/35 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl">
-          <Button variant="subtle" onClick={() => setSelectedPost(null)}>返回列表</Button>
+      {selectedProfile ? (
+        <section className={forumCard('p-6')}>
+          <Button variant="secondary" onClick={() => setSelectedProfile(null)}>
+            <ArrowLeft size={17} />
+            返回论坛
+          </Button>
+          <div className="mt-6 grid gap-6 lg:grid-cols-[260px_1fr]">
+            <aside className="rounded-[22px] border border-slate-200 bg-white/70 p-5">
+              <div className="grid h-20 w-20 place-items-center rounded-3xl bg-emerald-100 text-3xl font-black text-emerald-800">
+                {selectedProfile.username.slice(0, 1)}
+              </div>
+              <h2 className="mt-4 text-2xl font-semibold text-slate-950">{selectedProfile.username}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{selectedProfile.bio}</p>
+              <div className="mt-5 grid grid-cols-2 gap-3 text-center">
+                <div className="rounded-2xl bg-slate-100 p-3">
+                  <p className="text-2xl font-black text-slate-950">{selectedProfile.postCount}</p>
+                  <p className="text-xs font-semibold text-slate-500">发帖</p>
+                </div>
+                <div className="rounded-2xl bg-slate-100 p-3">
+                  <p className="text-2xl font-black text-slate-950">{selectedProfile.replyCount}</p>
+                  <p className="text-xs font-semibold text-slate-500">回复</p>
+                </div>
+              </div>
+              <p className="mt-4 text-sm text-slate-500">注册于 {formatDate(selectedProfile.createdAt)}</p>
+            </aside>
+            <div>
+              <h3 className="text-xl font-semibold text-slate-950">最近发布的帖子</h3>
+              <div className="mt-4 grid gap-3">
+                {selectedProfile.recentPosts.map((post) => (
+                  <button className="rounded-2xl border border-slate-200 bg-white/70 p-4 text-left transition hover:bg-white" key={post.id} onClick={() => loadPost(post.id)}>
+                    <Badge tone="green">{post.tag}</Badge>
+                    <h4 className="mt-3 text-lg font-semibold text-slate-950">{post.title}</h4>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{excerpt(post.content)}</p>
+                  </button>
+                ))}
+                {!selectedProfile.recentPosts.length && <p className="rounded-2xl bg-slate-100 p-4 text-sm text-slate-500">暂时还没有发布帖子。</p>}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : selectedPost ? (
+        <section className={forumCard('p-6')}>
+          <Button variant="secondary" onClick={() => setSelectedPost(null)}>
+            <ArrowLeft size={17} />
+            返回列表
+          </Button>
           <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-3xl font-semibold text-white/95">{selectedPost.title}</h2>
-              <p className="mt-2 text-sm text-white/55">{selectedPost.author.username} · {formatTime(selectedPost.createdAt)}</p>
+              <Badge tone="green">{selectedPost.tag}</Badge>
+              <h2 className="mt-4 text-3xl font-semibold text-slate-950">{selectedPost.title}</h2>
+              <p className="mt-2 text-sm text-slate-500">
+                <button className="font-semibold text-emerald-700 hover:text-emerald-900" onClick={() => loadProfile(selectedPost.author.id)}>
+                  {selectedPost.author.username}
+                </button>
+                <span> · {formatTime(selectedPost.createdAt)}</span>
+              </p>
             </div>
             {isAdmin && (
               <Button variant="subtle" onClick={() => deletePost(selectedPost.id)}>
@@ -243,68 +433,131 @@ export function Forum() {
               </Button>
             )}
           </div>
-          <p className="mt-6 whitespace-pre-wrap text-base leading-8 text-white/75">{selectedPost.content}</p>
+          <p className="mt-6 whitespace-pre-wrap rounded-[22px] border border-slate-200 bg-white/70 p-5 text-base leading-8 text-slate-700">{selectedPost.content}</p>
+          <div className="mt-5 flex flex-wrap gap-3 text-sm font-semibold text-slate-500">
+            <span className="inline-flex items-center gap-1"><Eye size={15} /> {selectedPost.viewCount}</span>
+            <span className="inline-flex items-center gap-1"><MessageSquare size={15} /> {selectedPost.commentCount}</span>
+            <span className="inline-flex items-center gap-1"><Heart size={15} /> {selectedPost.likeCount}</span>
+          </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button variant={liked ? 'primary' : 'secondary'} onClick={toggleLike} disabled={!user}>
+            <Button variant={liked ? 'primary' : 'secondary'} onClick={toggleLike}>
               <Heart size={17} />
               {liked ? '已点赞' : '点赞'} {selectedPost.likeCount}
             </Button>
-            <Button variant="subtle" onClick={() => setReportTarget({ targetType: 'POST', targetId: selectedPost.id })} disabled={!user}>
+            <Button variant="subtle" onClick={() => openReport('POST', selectedPost.id)}>
               <AlertTriangle size={17} />
               举报
             </Button>
           </div>
 
           <div className="mt-8 space-y-4">
-            <h3 className="text-xl font-semibold text-white/95">评论</h3>
-            {user && (
-              <div className="grid gap-3">
-                <textarea
-                  className="min-h-[110px] rounded-[22px] border border-white/10 bg-black/[0.18] p-4 text-sm leading-7 text-white/85 outline-none placeholder:text-white/35 focus:border-emerald-200/40"
-                  value={commentText}
-                  onChange={(event) => setCommentText(event.target.value)}
-                  placeholder="写下你的评论"
-                />
-                <Button className="w-fit" onClick={createComment}>发表评论</Button>
-              </div>
-            )}
-            {selectedPost.comments.map((comment) => (
-              <article className="rounded-2xl border border-white/10 bg-black/[0.14] p-4" key={comment.id}>
+            <h3 className="text-xl font-semibold text-slate-950">回复</h3>
+            <div className="grid gap-3 rounded-[22px] border border-slate-200 bg-white/70 p-4">
+              {user ? (
+                <>
+                  <textarea
+                    className="min-h-[110px] rounded-[18px] border border-slate-200 bg-white p-4 text-sm leading-7 text-slate-800 outline-none placeholder:text-slate-400 focus:border-emerald-500/50"
+                    value={commentText}
+                    onChange={(event) => setCommentText(event.target.value)}
+                    placeholder="写下你的回复"
+                  />
+                  <Button className="w-fit" onClick={createComment}>
+                    <Send size={16} />
+                    发表回复
+                  </Button>
+                </>
+              ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm text-white/55">{comment.author.username} · {formatTime(comment.createdAt)}</p>
+                  <p className="text-sm text-slate-500">登录后可以参与回复。</p>
+                  <Button onClick={() => setAuthMode('login')}>登录后回复</Button>
+                </div>
+              )}
+            </div>
+            {selectedPost.comments.map((comment) => (
+              <article className="rounded-2xl border border-slate-200 bg-white/75 p-4" key={comment.id}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm text-slate-500">
+                    <button className="font-semibold text-emerald-700 hover:text-emerald-900" onClick={() => loadProfile(comment.author.id)}>
+                      {comment.author.username}
+                    </button>
+                    <span> · {formatTime(comment.createdAt)}</span>
+                  </p>
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setReportTarget({ targetType: 'COMMENT', targetId: comment.id })} disabled={!user}>举报</Button>
+                    <Button variant="ghost" size="sm" onClick={() => openReport('COMMENT', comment.id)}>举报</Button>
                     {isAdmin && <Button variant="ghost" size="sm" onClick={() => deleteComment(comment.id)}>删除</Button>}
                   </div>
                 </div>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-white/75">{comment.content}</p>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">{comment.content}</p>
               </article>
             ))}
           </div>
         </section>
       ) : (
-        <section className="grid gap-4">
-          {filteredPosts.map((post) => (
-            <button
-              className="rounded-[24px] border border-white/10 bg-emerald-950/35 p-5 text-left shadow-[0_16px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-emerald-950/45"
-              key={post.id}
-              onClick={() => loadPost(post.id)}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-semibold text-white/95">{post.title}</h2>
-                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-white/65">{post.content}</p>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <section className="grid gap-4">
+            {posts.map((post) => (
+              <article className={forumCard('p-5 transition hover:-translate-y-0.5 hover:bg-white/[0.94]')} key={post.id}>
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <Badge tone="green">{post.tag}</Badge>
+                    <button className="mt-3 block text-left text-2xl font-semibold text-slate-950 hover:text-emerald-800" onClick={() => loadPost(post.id)}>
+                      {post.title}
+                    </button>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{excerpt(post.content)}</p>
+                  </div>
                 </div>
-                <Badge tone="slate">{post.author.username}</Badge>
+                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
+                  <button className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-900" onClick={() => loadProfile(post.author.id)}>
+                    <UserRound size={15} />
+                    {post.author.username}
+                  </button>
+                  <span className="inline-flex items-center gap-1"><Clock size={15} /> {formatTime(post.createdAt)}</span>
+                  <span className="inline-flex items-center gap-1"><Eye size={15} /> {post.viewCount}</span>
+                  <span className="inline-flex items-center gap-1"><MessageSquare size={15} /> {post.commentCount}</span>
+                  <span className="inline-flex items-center gap-1"><Heart size={15} /> {post.likeCount}</span>
+                </div>
+              </article>
+            ))}
+            {!posts.length && (
+              <div className={forumCard('p-8 text-center')}>
+                <p className="text-lg font-semibold text-slate-950">没有找到相关帖子</p>
+                <p className="mt-2 text-sm text-slate-500">换个关键词或分类试试看。</p>
               </div>
-              <div className="mt-4 flex flex-wrap gap-4 text-sm text-white/55">
-                <span>{formatTime(post.createdAt)}</span>
-                <span><Heart className="mr-1 inline" size={14} />{post.likeCount}</span>
-                <span><MessageSquare className="mr-1 inline" size={14} />{post.commentCount}</span>
+            )}
+          </section>
+
+          <aside className="space-y-4">
+            <section className={forumCard('p-5')}>
+              <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-950"><MessageSquare size={18} /> 最新动态</h3>
+              <div className="mt-4 grid gap-3">
+                {activePosts.map((post) => (
+                  <button className="rounded-2xl bg-slate-100/80 p-3 text-left transition hover:bg-white" key={post.id} onClick={() => loadPost(post.id)}>
+                    <p className="text-sm font-semibold text-slate-900">{post.title}</p>
+                    <p className="mt-1 text-xs text-slate-500">{post.commentCount} 回复 · {post.viewCount} 浏览</p>
+                  </button>
+                ))}
               </div>
-            </button>
-          ))}
-        </section>
+            </section>
+            <section className={forumCard('p-5')}>
+              <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-950"><Tags size={18} /> 热门 tag</h3>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {tagStats.map(({ tag, count }) => (
+                  <button className="rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-emerald-700" key={tag} onClick={() => setActiveTag(tag)}>
+                    {tag} {count ? count : ''}
+                  </button>
+                ))}
+              </div>
+            </section>
+            <section className={forumCard('p-5')}>
+              <h3 className="text-lg font-semibold text-slate-950">发帖须知</h3>
+              <div className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+                <p>标题尽量具体，选择合适 tag，方便同学搜索。</p>
+                <p>不要公开他人隐私，不发布攻击性、违法或广告内容。</p>
+                <p>论坛内容仅供校内学习生活交流参考。</p>
+              </div>
+            </section>
+          </aside>
+        </div>
       )}
 
       <Dialog
@@ -324,8 +577,8 @@ export function Forum() {
           }}
         >
           {authMode === 'register' && <Input value={authForm.username} onChange={(e) => setAuthForm({ ...authForm, username: e.target.value })} placeholder="用户名" autoComplete="username" />}
-          <Input value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} placeholder="邮箱" />
-          <Input type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} placeholder="密码" />
+          <Input value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} placeholder="邮箱" autoComplete="email" />
+          <Input type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} placeholder="密码" autoComplete={authMode === 'register' ? 'new-password' : 'current-password'} />
           {authError && (
             <div className="rounded-2xl border border-amber-200/20 bg-amber-300/10 px-4 py-3 text-sm leading-6 text-amber-50">
               {authError}
@@ -339,6 +592,16 @@ export function Forum() {
 
       <Dialog open={editorOpen} title="发布帖子" onClose={() => setEditorOpen(false)}>
         <div className="space-y-4">
+          <select
+            className="h-11 w-full rounded-2xl border border-white/10 bg-black/[0.18] px-4 text-sm font-semibold text-white/85 outline-none focus:border-emerald-200/40"
+            value={postForm.tag}
+            onChange={(e) => setPostForm({ ...postForm, tag: e.target.value as ForumTag })}
+          >
+            <option value="">选择 tag</option>
+            {forumTags.map((tag) => (
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </select>
           <Input value={postForm.title} onChange={(e) => setPostForm({ ...postForm, title: e.target.value })} placeholder="帖子标题" />
           <textarea
             className="min-h-[220px] w-full rounded-[22px] border border-white/10 bg-black/[0.18] p-4 text-sm leading-7 text-white/85 outline-none placeholder:text-white/35"
@@ -346,6 +609,7 @@ export function Forum() {
             onChange={(e) => setPostForm({ ...postForm, content: e.target.value })}
             placeholder="正文内容"
           />
+          {postError && <div className="rounded-2xl border border-amber-200/20 bg-amber-300/10 px-4 py-3 text-sm leading-6 text-amber-50">{postError}</div>}
           <Button onClick={createPost}>发布</Button>
         </div>
       </Dialog>

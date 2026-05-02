@@ -36,8 +36,10 @@ model Post {
   id           Int       @id @default(autoincrement())
   title        String
   content      String
+  tag          String    @default("闲聊")
   authorId     Int
   author       User      @relation(fields: [authorId], references: [id])
+  viewCount    Int       @default(0)
   likeCount    Int       @default(0)
   commentCount Int       @default(0)
   reportCount  Int       @default(0)

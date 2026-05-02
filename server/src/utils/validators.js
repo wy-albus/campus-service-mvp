@@ -1,5 +1,20 @@
 import { z } from 'zod';
 
+export const forumTags = [
+  '学习',
+  '吐槽',
+  '活动',
+  '比赛',
+  '旅游',
+  '情感',
+  '美食',
+  '求助',
+  '失物招领',
+  '校园生活',
+  '经验分享',
+  '闲聊',
+];
+
 export const registerSchema = z.object({
   username: z.string().trim().min(2).max(30),
   email: z.string().trim().email().max(120),
@@ -14,6 +29,7 @@ export const loginSchema = z.object({
 export const postSchema = z.object({
   title: z.string().trim().min(2).max(80),
   content: z.string().trim().min(2).max(3000),
+  tag: z.enum(forumTags),
 });
 
 export const commentSchema = z.object({
