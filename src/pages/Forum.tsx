@@ -564,7 +564,7 @@ export function Forum() {
             </section>
             <section className={forumCard('p-5')}>
               <h3 className="text-lg font-semibold text-slate-950">发帖须知</h3>
-              <div className="mt-3 space-y-2 rounded-2xl border border-emerald-900/10 bg-emerald-50/80 p-4 text-sm font-semibold leading-6 text-slate-800">
+              <div className="mt-3 space-y-2 rounded-2xl border border-emerald-900/10 bg-emerald-50/80 p-4 text-sm font-semibold leading-6 text-black">
                 <p>标题尽量具体，选择合适 tag，方便同学搜索。</p>
                 <p>不要公开他人隐私，不发布攻击性、违法或广告内容。</p>
                 <p>论坛内容仅供校内学习生活交流参考。</p>
