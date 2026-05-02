@@ -27,6 +27,7 @@ type Post = {
   title: string;
   content: string;
   tag: ForumTag;
+  imageUrl?: string | null;
   viewCount: number;
   likeCount: number;
   commentCount: number;
@@ -72,8 +73,9 @@ type ForumTag =
 
 const forumTags: ForumTag[] = ['学习', '吐槽', '活动', '比赛', '旅游', '情感', '美食', '求助', '失物招领', '校园生活', '经验分享', '闲聊'];
 const tagFilters: Array<'全部' | ForumTag> = ['全部', ...forumTags];
+const emojiOptions = ['😊', '😂', '👍', '🎉', '🔥', '❤️', '😭', '🤔', '🙏', '📚', '🌟', '🍜'];
 const emptyAuth = { username: '', email: '', password: '' };
-const emptyPostForm = { title: '', content: '', tag: '' as '' | ForumTag };
+const emptyPostForm = { title: '', content: '', tag: '' as '' | ForumTag, imageUrl: '' };
 
 function formatTime(value: string) {
   return new Date(value).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -107,6 +109,23 @@ function forumTagBadge(tag: string) {
     <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800 shadow-[0_4px_14px_rgba(15,118,110,0.08)]">
       {tag}
     </span>
+  );
+}
+
+function postImage(imageUrl?: string | null, compact = false) {
+  if (!imageUrl) return null;
+  return (
+    <div className={compact ? 'mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100' : 'mt-5 overflow-hidden rounded-[22px] border border-slate-200 bg-slate-100'}>
+      <img
+        src={imageUrl}
+        alt="帖子图片"
+        className={compact ? 'h-48 w-full object-cover' : 'max-h-[520px] w-full object-cover'}
+        loading="lazy"
+        onError={(event) => {
+          event.currentTarget.style.display = 'none';
+        }}
+      />
+    </div>
   );
 }
 
@@ -223,6 +242,10 @@ export function Forum() {
     } catch (error) {
       setPostError(error instanceof Error ? error.message : '发布失败');
     }
+  };
+
+  const insertEmoji = (emoji: string) => {
+    setPostForm((current) => ({ ...current, content: `${current.content}${emoji}` }));
   };
 
   const createComment = async () => {
@@ -416,6 +439,7 @@ export function Forum() {
                     {forumTagBadge(post.tag)}
                     <h4 className="mt-3 text-lg font-semibold text-slate-950">{post.title}</h4>
                     <p className="mt-2 text-sm font-medium leading-6 text-slate-700">{excerpt(post.content)}</p>
+                    {postImage(post.imageUrl, true)}
                   </button>
                 ))}
                 {!selectedProfile.recentPosts.length && <p className="rounded-2xl bg-slate-100 p-4 text-sm font-medium text-slate-700">暂时还没有发布帖子。</p>}
@@ -448,6 +472,7 @@ export function Forum() {
             )}
           </div>
           <p className="mt-6 whitespace-pre-wrap rounded-[22px] border border-slate-200 bg-white/70 p-5 text-base leading-8 text-slate-700">{selectedPost.content}</p>
+          {postImage(selectedPost.imageUrl)}
           <div className="mt-5 flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
             <span className="inline-flex items-center gap-1"><Eye size={15} /> {selectedPost.viewCount}</span>
             <span className="inline-flex items-center gap-1"><MessageSquare size={15} /> {selectedPost.commentCount}</span>
@@ -518,6 +543,7 @@ export function Forum() {
                       {post.title}
                     </button>
                     <p className="mt-2 text-sm font-medium leading-6 text-slate-700">{excerpt(post.content)}</p>
+                    {postImage(post.imageUrl, true)}
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium text-slate-600">
@@ -617,6 +643,19 @@ export function Forum() {
             ))}
           </select>
           <Input value={postForm.title} onChange={(e) => setPostForm({ ...postForm, title: e.target.value })} placeholder="帖子标题" />
+          <Input value={postForm.imageUrl} onChange={(e) => setPostForm({ ...postForm, imageUrl: e.target.value })} placeholder="图片链接，可选，例如 https://..." />
+          <div className="flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-black/[0.12] p-2">
+            {emojiOptions.map((emoji) => (
+              <button
+                key={emoji}
+                className="grid h-9 w-9 place-items-center rounded-xl text-lg transition hover:bg-white/10"
+                onClick={() => insertEmoji(emoji)}
+                aria-label={`插入 ${emoji}`}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
           <textarea
             className="min-h-[220px] w-full rounded-[22px] border border-white/10 bg-black/[0.18] p-4 text-sm leading-7 text-white/85 outline-none placeholder:text-white/35"
             value={postForm.content}
