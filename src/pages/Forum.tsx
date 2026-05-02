@@ -102,6 +102,14 @@ function tagPillClass(active = false) {
     : 'rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-emerald-500/35 hover:bg-emerald-50 hover:text-emerald-800';
 }
 
+function forumTagBadge(tag: string) {
+  return (
+    <span className="inline-flex rounded-full border border-emerald-500/25 bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800 shadow-[0_4px_14px_rgba(15,118,110,0.08)]">
+      {tag}
+    </span>
+  );
+}
+
 export function Forum() {
   const [user, setUser] = useState<ForumUser | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -405,7 +413,7 @@ export function Forum() {
               <div className="mt-4 grid gap-3">
                 {selectedProfile.recentPosts.map((post) => (
                   <button className="rounded-2xl border border-slate-200 bg-white/70 p-4 text-left transition hover:bg-white" key={post.id} onClick={() => loadPost(post.id)}>
-                    <Badge tone="green">{post.tag}</Badge>
+                    {forumTagBadge(post.tag)}
                     <h4 className="mt-3 text-lg font-semibold text-slate-950">{post.title}</h4>
                     <p className="mt-2 text-sm font-medium leading-6 text-slate-700">{excerpt(post.content)}</p>
                   </button>
@@ -423,7 +431,7 @@ export function Forum() {
           </button>
           <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <Badge tone="green">{selectedPost.tag}</Badge>
+              {forumTagBadge(selectedPost.tag)}
               <h2 className="mt-4 text-3xl font-semibold text-slate-950">{selectedPost.title}</h2>
               <p className="mt-2 text-sm font-medium text-slate-600">
                 <button className="font-semibold text-emerald-700 hover:text-emerald-900" onClick={() => loadProfile(selectedPost.author.id)}>
@@ -505,7 +513,7 @@ export function Forum() {
               <article className={forumCard('p-5 transition hover:-translate-y-0.5 hover:bg-white/[0.94]')} key={post.id}>
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <Badge tone="green">{post.tag}</Badge>
+                    {forumTagBadge(post.tag)}
                     <button className="mt-3 block text-left text-2xl font-semibold text-slate-950 hover:text-emerald-800" onClick={() => loadPost(post.id)}>
                       {post.title}
                     </button>
@@ -556,7 +564,7 @@ export function Forum() {
             </section>
             <section className={forumCard('p-5')}>
               <h3 className="text-lg font-semibold text-slate-950">发帖须知</h3>
-              <div className="mt-3 space-y-2 text-sm font-medium leading-6 text-slate-700">
+              <div className="mt-3 space-y-2 rounded-2xl border border-emerald-900/10 bg-emerald-50/80 p-4 text-sm font-semibold leading-6 text-slate-800">
                 <p>标题尽量具体，选择合适 tag，方便同学搜索。</p>
                 <p>不要公开他人隐私，不发布攻击性、违法或广告内容。</p>
                 <p>论坛内容仅供校内学习生活交流参考。</p>
