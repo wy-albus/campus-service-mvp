@@ -1,0 +1,38 @@
+[
+  {
+    "id": "sample-tsinghua",
+    "name": "清华大学",
+    "city": "北京",
+    "description": "适合展示理工、人文、社团、科研和大学节奏等经验内容。",
+    "highlights": ["学习节奏", "校园生活", "专业选择"],
+    "cover": "linear-gradient(135deg, rgba(167, 139, 250, 0.70), rgba(110, 231, 183, 0.62))",
+    "postCount": 0
+  },
+  {
+    "id": "sample-pku",
+    "name": "北京大学",
+    "city": "北京",
+    "description": "可以讨论通识氛围、专业体验、社团活动和城市生活。",
+    "highlights": ["通识氛围", "社团活动", "城市生活"],
+    "cover": "linear-gradient(135deg, rgba(248, 113, 113, 0.62), rgba(253, 224, 71, 0.58))",
+    "postCount": 0
+  },
+  {
+    "id": "sample-xjtu",
+    "name": "西安交通大学",
+    "city": "西安",
+    "description": "适合分享工科培养、宿舍食堂、城市感受和竞赛科研体验。",
+    "highlights": ["工科培养", "食堂宿舍", "科研竞赛"],
+    "cover": "linear-gradient(135deg, rgba(251, 146, 60, 0.64), rgba(45, 212, 191, 0.56))",
+    "postCount": 0
+  },
+  {
+    "id": "sample-scu",
+    "name": "四川大学",
+    "city": "成都",
+    "description": "可以分享综合大学体验、专业选择、成都生活和学习规划。",
+    "highlights": ["综合大学", "成都生活", "学习规划"],
+    "cover": "linear-gradient(135deg, rgba(96, 165, 250, 0.62), rgba(134, 239, 172, 0.58))",
+    "postCount": 0
+  }
+]

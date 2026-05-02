@@ -1,4 +1,4 @@
-import { BookOpen, Eye, EyeOff, History, Home, Images, Info, Menu, MessagesSquare, X } from 'lucide-react';
+import { BookOpen, Eye, EyeOff, GraduationCap, History, Home, Info, Menu, MessagesSquare, X } from 'lucide-react';
 import { useState } from 'react';
 import type { PageId } from '../App';
 import { Button } from './ui/Button';
@@ -7,7 +7,7 @@ import { cn } from './ui/utils';
 const navItems: Array<{ id: PageId; label: string; icon: typeof Home }> = [
   { id: 'home', label: '首页', icon: Home },
   { id: 'resources', label: '学习资源', icon: BookOpen },
-  { id: 'gallery', label: '校园图库', icon: Images },
+  { id: 'gallery', label: '大学经验馆', icon: GraduationCap },
   { id: 'forum', label: '论坛', icon: MessagesSquare },
   { id: 'changelog', label: '更新日志', icon: History },
   { id: 'about', label: '关于本站', icon: Info },

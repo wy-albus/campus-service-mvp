@@ -12,6 +12,7 @@ const postSelect = {
   content: true,
   tag: true,
   imageUrl: true,
+  university: true,
   viewCount: true,
   likeCount: true,
   commentCount: true,
@@ -27,10 +28,12 @@ postsRouter.get('/', async (req, res, next) => {
     const pageSize = Math.min(Math.max(Number(req.query.pageSize || 10), 1), 50);
     const q = String(req.query.search || req.query.q || '').trim();
     const tag = String(req.query.tag || '').trim();
+    const university = String(req.query.university || '').trim();
     const sort = String(req.query.sort || 'latest');
     const where = {
       isDeleted: false,
       ...(tag && forumTags.includes(tag) ? { tag } : {}),
+      ...(university ? { university } : {}),
       ...(q
         ? {
             OR: [

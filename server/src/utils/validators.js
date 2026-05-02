@@ -30,10 +30,23 @@ export const postSchema = z.object({
   title: z.string().trim().min(2).max(80),
   content: z.string().trim().min(2).max(3000),
   tag: z.enum(forumTags),
+  university: z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+    z.string().trim().min(2).max(80).optional(),
+  ),
   imageUrl: z.preprocess(
     (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
     z.string().trim().url().max(500).optional(),
   ),
+});
+
+export const universityAreaSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  city: z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? '' : value),
+    z.string().trim().max(40).default(''),
+  ),
+  description: z.string().trim().min(6).max(600),
 });
 
 export const commentSchema = z.object({

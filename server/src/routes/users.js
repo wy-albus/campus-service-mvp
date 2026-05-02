@@ -9,6 +9,7 @@ const publicPostSelect = {
   content: true,
   tag: true,
   imageUrl: true,
+  university: true,
   viewCount: true,
   likeCount: true,
   commentCount: true,
