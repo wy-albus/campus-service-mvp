@@ -8,6 +8,7 @@ import { reportsRouter } from './routes/reports.js';
 import { adminRouter } from './routes/admin.js';
 import { usersRouter } from './routes/users.js';
 import { universitiesRouter } from './routes/universities.js';
+import { bootstrapAdmins } from './utils/bootstrapAdmins.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -32,6 +33,12 @@ app.use((error, _req, res, _next) => {
   res.status(error.status || 500).json({ error: error.message || 'Internal server error.' });
 });
 
-app.listen(port, () => {
-  console.log(`Forum API listening on http://localhost:${port}`);
-});
+bootstrapAdmins()
+  .catch((error) => {
+    console.error('Admin bootstrap failed:', error);
+  })
+  .finally(() => {
+    app.listen(port, () => {
+      console.log(`Forum API listening on http://localhost:${port}`);
+    });
+  });

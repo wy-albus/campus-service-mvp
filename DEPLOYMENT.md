@@ -103,6 +103,14 @@ To give an existing registered user administrator privileges, run this from Rend
 npm run prisma:promote-admin -- user@example.com
 ```
 
+Free Render instances may not provide Shell access. In that case, set one of these environment variables in Render and redeploy:
+
+```env
+PROMOTE_ADMIN_EMAILS="user@example.com"
+```
+
+Multiple admin emails can be separated by commas. On server startup, existing users with those emails are promoted to `ADMIN`.
+
 Admins can delete forum posts/comments and handle reports. Do not expose this command or database credentials to frontend users.
 
 ## 4. Netlify Frontend Deployment
