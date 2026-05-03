@@ -97,6 +97,14 @@ After the first successful backend deploy, create the admin account by running t
 npm run prisma:seed
 ```
 
+To give an existing registered user administrator privileges, run this from Render Shell:
+
+```bash
+npm run prisma:promote-admin -- user@example.com
+```
+
+Admins can delete forum posts/comments and handle reports. Do not expose this command or database credentials to frontend users.
+
 ## 4. Netlify Frontend Deployment
 
 Create a new Netlify site from the same GitHub repository.

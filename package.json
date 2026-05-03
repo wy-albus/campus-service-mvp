@@ -12,6 +12,7 @@
     "prisma:deploy": "node ./node_modules/prisma/build/index.js migrate deploy --schema server/prisma/schema.prisma",
     "prisma:studio": "node ./node_modules/prisma/build/index.js studio --schema server/prisma/schema.prisma",
     "prisma:seed": "node server/prisma/seed.js",
+    "prisma:promote-admin": "node server/prisma/promote-admin.js",
     "server:build": "npm run prisma:generate && npm run prisma:deploy",
     "build": "node ./node_modules/typescript/bin/tsc -b && node ./node_modules/vite/bin/vite.js build",
     "preview": "node ./node_modules/vite/bin/vite.js preview"
