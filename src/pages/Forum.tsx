@@ -295,9 +295,14 @@ export function Forum() {
   };
 
   const deletePost = async (id: number) => {
-    await apiRequest(`/posts/${id}`, { method: 'DELETE' });
-    setSelectedPost(null);
-    await loadPosts();
+    try {
+      await apiRequest(`/posts/${id}`, { method: 'DELETE' });
+      setSelectedPost(null);
+      setMessage('帖子已删除');
+      await loadPosts();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '删除失败');
+    }
   };
 
   const deleteComment = async (id: number) => {
@@ -545,6 +550,12 @@ export function Forum() {
                     <p className="mt-2 text-sm font-medium leading-6 text-slate-700">{excerpt(post.content)}</p>
                     {postImage(post.imageUrl, true)}
                   </div>
+                  {isAdmin && (
+                    <button className={lightButtonClass('h-9 px-3 text-xs text-red-700 hover:border-red-300 hover:text-red-800')} onClick={() => deletePost(post.id)}>
+                      <Trash2 size={15} />
+                      删除
+                    </button>
+                  )}
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-medium text-slate-600">
                   <button className="inline-flex items-center gap-1 font-semibold text-emerald-700 hover:text-emerald-900" onClick={() => loadProfile(post.author.id)}>
