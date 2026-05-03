@@ -22,6 +22,16 @@ const postSelect = {
   author: { select: { id: true, username: true, role: true } },
 };
 
+function cleanPostBody(body) {
+  const data = { ...body };
+  for (const key of ['imageUrl', 'university']) {
+    if (data[key] === undefined || data[key] === null || (typeof data[key] === 'string' && data[key].trim() === '')) {
+      delete data[key];
+    }
+  }
+  return data;
+}
+
 postsRouter.get('/', async (req, res, next) => {
   try {
     const page = Math.max(Number(req.query.page || 1), 1);
@@ -63,7 +73,7 @@ postsRouter.get('/', async (req, res, next) => {
 
 postsRouter.post('/', requireAuth, async (req, res, next) => {
   try {
-    const data = parseBody(postSchema, req.body);
+    const data = parseBody(postSchema, cleanPostBody(req.body));
     const post = await prisma.post.create({
       data: { ...data, authorId: req.user.id },
       select: postSelect,
