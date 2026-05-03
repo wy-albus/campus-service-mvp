@@ -1,4 +1,15 @@
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+function resolveApiBase() {
+  const envBase = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+  const host = typeof window === 'undefined' ? '' : window.location.hostname;
+
+  if (host === 'campus-service-web.netlify.app') {
+    return '/api';
+  }
+
+  return envBase || '/api';
+}
+
+const API_BASE = resolveApiBase();
 const TOKEN_KEY = 'forum-token';
 
 export type ForumUser = {
@@ -33,7 +44,7 @@ async function requestWithRetry(url: string, options: RequestInit) {
       return await fetch(url, options);
     } catch {
       throw new Error(
-        '无法连接后端服务。Render 免费服务可能正在休眠或网络暂时阻断，请等待 30 秒后刷新重试。',
+        '无法连接后端服务。请刷新页面后重试，或检查 /api/health 是否能正常返回。',
       );
     }
   }

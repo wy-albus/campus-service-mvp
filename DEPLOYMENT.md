@@ -115,7 +115,14 @@ Environment variables:
 VITE_API_BASE_URL="https://your-render-service.onrender.com/api"
 ```
 
-The frontend reads the backend address from `VITE_API_BASE_URL`.
+The frontend can read the backend address from `VITE_API_BASE_URL`.
+For the production Netlify site, `netlify.toml` also proxies same-origin API requests:
+
+```text
+/api/* -> https://campus-service-api.onrender.com/api/*
+```
+
+This avoids browser cross-origin failures for forum login/register requests.
 
 For local development, the frontend defaults to `/api`, and Vite proxies `/api` to `http://localhost:4000`.
 
@@ -193,6 +200,7 @@ After Netlify deploys:
 
 If requests fail in the browser, check:
 
+- `https://your-netlify-site.netlify.app/api/health` returns `{ "ok": true }`
 - Netlify `VITE_API_BASE_URL` includes `/api`
 - Render `CLIENT_ORIGIN` exactly matches the Netlify site origin
 - Render backend `/api/health` returns `{ "ok": true }`
