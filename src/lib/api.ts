@@ -20,10 +20,30 @@ export function clearToken() {
   window.localStorage.removeItem(TOKEN_KEY);
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function requestWithRetry(url: string, options: RequestInit) {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    await wait(1400);
+    try {
+      return await fetch(url, options);
+    } catch {
+      throw new Error(
+        '无法连接后端服务。Render 免费服务可能正在休眠或网络暂时阻断，请等待 30 秒后刷新重试。',
+      );
+    }
+  }
+}
+
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await requestWithRetry(`${API_BASE}${path}`, {
     ...options,
+    mode: 'cors',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
