@@ -26,18 +26,22 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+const optionalUniversity = z
+  .union([z.literal(''), z.string().trim().min(2).max(80)])
+  .optional()
+  .transform((value) => value || undefined);
+
+const optionalImageUrl = z
+  .union([z.literal(''), z.string().trim().url().max(500)])
+  .optional()
+  .transform((value) => value || undefined);
+
 export const postSchema = z.object({
   title: z.string().trim().min(2).max(80),
   content: z.string().trim().min(2).max(3000),
   tag: z.enum(forumTags),
-  university: z.preprocess(
-    (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
-    z.string().trim().min(2).max(80).optional(),
-  ),
-  imageUrl: z.preprocess(
-    (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
-    z.string().trim().url().max(500).optional(),
-  ),
+  university: optionalUniversity,
+  imageUrl: optionalImageUrl,
 });
 
 export const universityAreaSchema = z.object({

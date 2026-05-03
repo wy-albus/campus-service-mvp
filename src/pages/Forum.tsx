@@ -148,6 +148,7 @@ export function Forum() {
   const [reportReason, setReportReason] = useState('');
   const [reportsOpen, setReportsOpen] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
   const [message, setMessage] = useState('');
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
@@ -233,7 +234,13 @@ export function Forum() {
   const createPost = async () => {
     setPostError('');
     try {
-      const data = await apiRequest<{ post: Post }>('/posts', { method: 'POST', body: JSON.stringify(postForm) });
+      const payload = {
+        title: postForm.title.trim(),
+        content: postForm.content.trim(),
+        tag: postForm.tag,
+        ...(postForm.imageUrl.trim() ? { imageUrl: postForm.imageUrl.trim() } : {}),
+      };
+      const data = await apiRequest<{ post: Post }>('/posts', { method: 'POST', body: JSON.stringify(payload) });
       setPostForm(emptyPostForm);
       setEditorOpen(false);
       setMessage('发布成功');
@@ -294,10 +301,16 @@ export function Forum() {
     }
   };
 
-  const deletePost = async (id: number) => {
+  const requestDeletePost = (post: Pick<Post, 'id' | 'title'>) => {
+    setDeleteTarget({ id: post.id, title: post.title });
+  };
+
+  const confirmDeletePost = async () => {
+    if (!deleteTarget) return;
     try {
-      await apiRequest(`/posts/${id}`, { method: 'DELETE' });
+      await apiRequest(`/posts/${deleteTarget.id}`, { method: 'DELETE' });
       setSelectedPost(null);
+      setDeleteTarget(null);
       setMessage('帖子已删除');
       await loadPosts();
     } catch (error) {
@@ -470,7 +483,7 @@ export function Forum() {
               </p>
             </div>
             {isAdmin && (
-              <button className={lightButtonClass('text-red-700 hover:border-red-300 hover:text-red-800')} onClick={() => deletePost(selectedPost.id)}>
+              <button className={lightButtonClass('text-red-700 hover:border-red-300 hover:text-red-800')} onClick={() => requestDeletePost(selectedPost)}>
                 <Trash2 size={17} />
                 删除帖子
               </button>
@@ -551,7 +564,7 @@ export function Forum() {
                     {postImage(post.imageUrl, true)}
                   </div>
                   {isAdmin && (
-                    <button className={lightButtonClass('h-9 px-3 text-xs text-red-700 hover:border-red-300 hover:text-red-800')} onClick={() => deletePost(post.id)}>
+                    <button className={lightButtonClass('h-9 px-3 text-xs text-red-700 hover:border-red-300 hover:text-red-800')} onClick={() => requestDeletePost(post)}>
                       <Trash2 size={15} />
                       删除
                     </button>
@@ -687,6 +700,24 @@ export function Forum() {
             placeholder="请说明举报原因"
           />
           <Button onClick={submitReport}>提交举报</Button>
+        </div>
+      </Dialog>
+
+      <Dialog open={Boolean(deleteTarget)} title="确认删除帖子" description="删除后帖子会从列表和详情页隐藏，请确认这确实是违规或不适合展示的内容。" onClose={() => setDeleteTarget(null)}>
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-red-200/20 bg-red-400/10 px-4 py-3">
+            <p className="text-sm font-semibold text-white/70">即将删除</p>
+            <p className="mt-1 text-lg font-bold text-white/95">{deleteTarget?.title}</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button className="bg-red-200 text-red-950 hover:bg-red-100" onClick={confirmDeletePost}>
+              <Trash2 size={17} />
+              确认删除
+            </Button>
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>
+              取消
+            </Button>
+          </div>
         </div>
       </Dialog>
 
