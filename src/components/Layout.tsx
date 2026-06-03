@@ -2,6 +2,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PageId } from '../App';
 import backgrounds from '../data/backgrounds.json';
+import { AgentChatWidget } from './AgentChatWidget';
 import { AtmosphereBackground } from './AtmosphereBackground';
 import { Navbar } from './Navbar';
 import { Button } from './ui/Button';
@@ -63,6 +64,7 @@ export function Layout({ activePage, children, onNavigate }: LayoutProps) {
           <EyeOff size={18} />
         </Button>
       )}
+      {!contentHidden && <AgentChatWidget />}
     </div>
   );
 }

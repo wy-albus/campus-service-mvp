@@ -1,0 +1,302 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { prisma } from '../db.js';
+
+const POST_SEARCH_LIMIT = 8;
+
+const allowedTags = ['吐槽', '学习', '活动', '比赛', '旅游', '情感', '美食', '求助', '经验分享'];
+
+const mockPosts = [
+  {
+    id: 'mock-1',
+    title: '运动会视频剪辑征集',
+    tag: '活动',
+    content: '欢迎大家投稿运动会精彩瞬间，可以用于后续活动回顾。',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'mock-2',
+    title: '高三复习资料整理',
+    tag: '学习',
+    content: '这里整理了一些数学和英语复习资料，适合日常复习。',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'mock-3',
+    title: '校园比赛经验分享',
+    tag: '比赛',
+    content: '分享一些参加校园比赛、准备材料和组队的经验。',
+    createdAt: new Date().toISOString(),
+  },
+];
+
+const builtInResources = [
+  {
+    name: '每日一题',
+    type: '学习',
+    description: '从题库中查看练习题，帮助学生进行日常复习。',
+    url: '/',
+  },
+  {
+    name: '背单词',
+    type: '英语',
+    description: '基于词库进行单词记忆训练。',
+    url: '/',
+  },
+  {
+    name: '国家智慧教育平台',
+    type: '外部资源',
+    description: '提供国家级公开学习资源入口。',
+    url: 'https://www.smartedu.cn/',
+  },
+  {
+    name: '考试复习资料',
+    type: '学习',
+    description: '查看考试安排、复习资料入口和备考相关内容。',
+    url: '/',
+  },
+  {
+    name: '大学信息',
+    type: '升学',
+    description: '帮助学生了解大学话题区、专业选择和校园经验。',
+    url: '/',
+  },
+];
+
+function clampLimit(limit, fallback = 5, max = 10) {
+  const value = Number(limit);
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(Math.max(Math.trunc(value), 1), max);
+}
+
+function normalizeText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function makeSummary(content, maxLength = 90) {
+  const text = String(content || '').replace(/\s+/g, ' ').trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+function scoreText(item, query) {
+  if (!query) return 1;
+  const haystack = normalizeText(
+    [item.name, item.title, item.type, item.category, item.description, item.content, ...(item.tags || [])].join(' '),
+  );
+  return haystack.includes(normalizeText(query)) ? 1 : 0;
+}
+
+async function readJsonFile(relativePath) {
+  const fullPath = path.join(process.cwd(), relativePath);
+  const raw = await fs.readFile(fullPath, 'utf8');
+  return JSON.parse(raw);
+}
+
+async function loadStaticResources() {
+  const resources = [];
+
+  try {
+    const resourceItems = await readJsonFile('src/data/resources.json');
+    for (const item of resourceItems) {
+      resources.push({
+        name: item.title,
+        type: item.category || '学习资源',
+        description: item.description || '',
+        url: item.url || '/',
+        tags: item.tags || [],
+      });
+    }
+  } catch {
+    // Static frontend data is optional for the agent; built-ins cover the local demo.
+  }
+
+  try {
+    const examItems = await readJsonFile('src/data/exams.json');
+    for (const item of examItems) {
+      resources.push({
+        name: item.name,
+        type: '考试安排',
+        description: item.notice || item.origin || '考试安排与复习提醒。',
+        url: '/',
+        tags: ['考试', '复习'],
+      });
+    }
+  } catch {
+    // Same optional-data handling as above.
+  }
+
+  try {
+    const universityItems = await readJsonFile('src/data/universities.json');
+    for (const item of universityItems) {
+      resources.push({
+        name: item.name,
+        type: '大学信息',
+        description: item.description || `${item.city || ''}大学话题区。`,
+        url: '/',
+        tags: item.highlights || ['大学'],
+      });
+    }
+  } catch {
+    // Same optional-data handling as above.
+  }
+
+  return [...builtInResources, ...resources];
+}
+
+export async function getSiteGuide() {
+  return {
+    siteName: '校园服务网站',
+    description: '面向高中学生与校友的校园服务与交流平台。',
+    features: ['学习资源', '每日一题', '背单词', '论坛社区', '大学话题区', '校园图册', '关于本站'],
+    limitations: ['暂不支持私信', '暂不支持关注好友', '暂不支持 AI 自动发布帖子', '暂不支持 AI 自动删除或审核帖子'],
+  };
+}
+
+export async function searchPosts(args = {}) {
+  const query = String(args.query || '').trim();
+  const tag = String(args.tag || '').trim();
+  const limit = clampLimit(args.limit, 5, POST_SEARCH_LIMIT);
+
+  try {
+    const where = {
+      isDeleted: false,
+      ...(tag ? { tag } : {}),
+      ...(query
+        ? {
+            OR: [
+              { title: { contains: query, mode: 'insensitive' } },
+              { content: { contains: query, mode: 'insensitive' } },
+              { tag: { contains: query, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+
+    const posts = await prisma.post.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        tag: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      source: 'database',
+      items: posts.map((post) => ({
+        id: post.id,
+        title: post.title,
+        tag: post.tag,
+        summary: makeSummary(post.content),
+        createdAt: post.createdAt,
+      })),
+    };
+  } catch (error) {
+    console.warn('[Agent] search_posts database fallback:', error.message);
+    const filtered = mockPosts
+      .filter((post) => (!tag || post.tag === tag) && (!query || scoreText(post, query)))
+      .slice(0, limit)
+      .map((post) => ({
+        id: post.id,
+        title: post.title,
+        tag: post.tag,
+        summary: makeSummary(post.content),
+        createdAt: post.createdAt,
+      }));
+
+    return {
+      source: 'mock',
+      note: '数据库暂时不可用，以下为演示数据。',
+      items: filtered,
+    };
+  }
+}
+
+export async function searchResources(args = {}) {
+  const query = String(args.query || '').trim();
+  const limit = clampLimit(args.limit, 5, 10);
+  const resources = await loadStaticResources();
+  const matches = resources.filter((item) => scoreText(item, query)).slice(0, limit);
+  const items = matches.length > 0 ? matches : resources.slice(0, limit);
+
+  return {
+    items: items.map((item) => ({
+      name: item.name,
+      type: item.type,
+      description: item.description,
+      url: item.url || '/',
+    })),
+  };
+}
+
+export async function recommendTags(args = {}) {
+  const content = String(args.content || args.query || '').toLowerCase();
+  const matches = [];
+
+  const rules = [
+    ['美食', ['食堂', '吃饭', '饭菜', '窗口', '排队', '午餐', '晚餐']],
+    ['吐槽', ['太慢', '不满', '吐槽', '建议', '问题', '体验']],
+    ['求助', ['求助', '怎么办', '请问', '帮我', '需要']],
+    ['学习', ['学习', '复习', '作业', '考试', '资料', '题']],
+    ['比赛', ['比赛', '竞赛', '组队', '报名', '获奖']],
+    ['活动', ['活动', '运动会', '社团', '征集', '报名']],
+    ['旅游', ['旅游', '出行', '路线', '景点']],
+    ['情感', ['情感', '心情', '压力', '朋友', '同学关系']],
+    ['经验分享', ['经验', '分享', '方法', '攻略']],
+  ];
+
+  for (const [tag, keywords] of rules) {
+    if (keywords.some((keyword) => content.includes(keyword))) {
+      matches.push(tag);
+    }
+  }
+
+  const tags = [...new Set(matches.filter((tag) => allowedTags.includes(tag)))].slice(0, 3);
+  const finalTags = tags.length > 0 ? tags : ['求助'];
+
+  return {
+    tags: finalTags,
+    reason: `内容和${finalTags.join('、')}相关，因此推荐这些标签。`,
+  };
+}
+
+export async function draftPost(args = {}) {
+  const topic = String(args.topic || args.content || '校园问题').trim();
+  const tone = String(args.tone || '委婉').trim();
+  const tag = String(args.tag || '').trim();
+  const recommended = await recommendTags({ content: `${topic} ${tag}` });
+  const tags = tag && allowedTags.includes(tag) ? [tag, ...recommended.tags.filter((item) => item !== tag)].slice(0, 3) : recommended.tags;
+
+  return {
+    title: `关于${topic}的一点建议`,
+    content:
+      tone.includes('直接') || tone.includes('强硬')
+        ? `最近关于${topic}的问题比较影响大家的体验，希望相关同学或负责老师可以关注并尽快优化。也欢迎大家补充具体情况，一起把问题说清楚。`
+        : `最近我注意到${topic}可能会影响一些同学的学习和生活安排。想委婉地提个建议：如果后续能适当优化流程、增加提醒或引导分流，大家的体验应该会更顺畅。也欢迎有类似感受的同学一起补充。`,
+    tags,
+    note: '这是 AI 生成的发帖草稿，不会自动发布；请你确认、修改后再手动发布。',
+  };
+}
+
+export async function runAgentTool(toolName, args) {
+  switch (toolName) {
+    case 'get_site_guide':
+      return getSiteGuide(args);
+    case 'search_posts':
+      return searchPosts(args);
+    case 'search_resources':
+      return searchResources(args);
+    case 'recommend_tags':
+      return recommendTags(args);
+    case 'draft_post':
+      return draftPost(args);
+    default:
+      return null;
+  }
+}
+
+export const agentToolNames = ['get_site_guide', 'search_posts', 'search_resources', 'recommend_tags', 'draft_post'];

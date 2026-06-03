@@ -2,7 +2,7 @@
 
 This project is designed to deploy from one GitHub repository:
 
-- Frontend: Netlify
+- Frontend: Netlify or GitHub Pages
 - Backend: Render Web Service
 - Database: PostgreSQL
 - ORM: Prisma
@@ -73,7 +73,7 @@ Environment variables:
 ```env
 DATABASE_URL="your-postgresql-connection-string"
 JWT_SECRET="use-a-long-random-secret"
-CLIENT_ORIGIN="https://your-netlify-site.netlify.app"
+CLIENT_ORIGINS="http://localhost:5173,http://localhost:5174,https://your-netlify-site.netlify.app,https://your-github-username.github.io"
 NODE_ENV="production"
 ADMIN_EMAIL="your-admin-email@example.com"
 ADMIN_USERNAME="admin"
@@ -128,11 +128,11 @@ Publish directory: dist
 Environment variables:
 
 ```env
-VITE_API_BASE_URL="https://your-render-service.onrender.com/api"
+VITE_BASE_PATH="/"
 ```
 
-The frontend can read the backend address from `VITE_API_BASE_URL`.
-For the production Netlify site, `netlify.toml` also proxies same-origin API requests:
+Netlify can continue to use same-origin `/api` requests. Do not set `VITE_API_BASE_URL` unless you intentionally want to bypass the Netlify proxy.
+For the production Netlify site, `netlify.toml` proxies same-origin API requests:
 
 ```text
 /api/* -> https://campus-service-api.onrender.com/api/*
@@ -140,9 +140,28 @@ For the production Netlify site, `netlify.toml` also proxies same-origin API req
 
 This avoids browser cross-origin failures for forum login/register requests.
 
+## 5. GitHub Pages Frontend Deployment
+
+GitHub Pages can host the same Vite frontend, but it cannot provide the Netlify `/api` proxy.
+
+GitHub Pages build environment variables:
+
+```env
+VITE_BASE_PATH="/your-repository-name/"
+VITE_API_BASE_URL="https://your-render-service.onrender.com/api"
+```
+
+If you deploy GitHub Pages at a custom root domain, use `VITE_BASE_PATH="/"` instead.
+
+Render must include the GitHub Pages origin in `CLIENT_ORIGINS`, for example:
+
+```env
+CLIENT_ORIGINS="http://localhost:5173,http://localhost:5174,https://your-netlify-site.netlify.app,https://your-github-username.github.io"
+```
+
 For local development, the frontend defaults to `/api`, and Vite proxies `/api` to `http://localhost:4000`.
 
-## 5. Local Development
+## 6. Local Development
 
 Install dependencies:
 
@@ -155,7 +174,7 @@ Create `.env` from `.env.example`, then use a local or cloud PostgreSQL connecti
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?schema=public"
 JWT_SECRET="dev-secret"
-CLIENT_ORIGIN="http://localhost:5173"
+CLIENT_ORIGINS="http://localhost:5173,http://localhost:5174"
 NODE_ENV="development"
 ADMIN_EMAIL="admin@example.com"
 ADMIN_USERNAME="admin"
@@ -186,7 +205,7 @@ Start frontend in another terminal:
 npm run dev
 ```
 
-## 6. Deployment Test Checklist
+## 7. Deployment Test Checklist
 
 After Render deploys, open:
 
@@ -217,8 +236,9 @@ After Netlify deploys:
 If requests fail in the browser, check:
 
 - `https://your-netlify-site.netlify.app/api/health` returns `{ "ok": true }`
-- Netlify `VITE_API_BASE_URL` includes `/api`
-- Render `CLIENT_ORIGIN` exactly matches the Netlify site origin
+- Netlify keeps `netlify.toml` `/api` proxy enabled
+- GitHub Pages sets `VITE_API_BASE_URL` to the Render backend URL, including `/api`
+- Render `CLIENT_ORIGINS` includes every frontend origin that should call the backend
 - Render backend `/api/health` returns `{ "ok": true }`
 - PostgreSQL `DATABASE_URL` is correct
 - Prisma migrations completed during Render build

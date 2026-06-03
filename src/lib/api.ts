@@ -1,15 +1,8 @@
 function resolveApiBase() {
-  const envBase = String(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
-  const host = typeof window === 'undefined' ? '' : window.location.hostname;
-
-  if (host === 'campus-service-web.netlify.app') {
-    return '/api';
-  }
-
-  return envBase || '/api';
+  return String(import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 }
 
-const API_BASE = resolveApiBase();
+export const API_BASE = resolveApiBase();
 const TOKEN_KEY = 'forum-token';
 
 export type ForumUser = {
