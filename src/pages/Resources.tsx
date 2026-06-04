@@ -25,6 +25,7 @@ import { Input } from '../components/ui/Input';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import dailyQuestions from '../data/dailyQuestions.json';
 import words from '../data/words.json';
+import { publicAsset } from '../utils/assets';
 
 type DailyQuestion = (typeof dailyQuestions)[number];
 type WordItem = (typeof words)[number];
@@ -32,7 +33,7 @@ type ToolId = 'daily-question' | 'vocabulary' | 'rollcall' | 'countdown' | 'offi
 
 const rollcallKey = 'study-toolbox-rollcall-names';
 const wordProgressKey = 'study-toolbox-words-progress';
-const alarmSoundPath = '/audio/alarm.wav';
+const alarmSoundPath = publicAsset('/audio/alarm.wav');
 
 const tools: Array<{
   id: ToolId;

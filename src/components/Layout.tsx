@@ -2,6 +2,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { PageId } from '../App';
 import backgrounds from '../data/backgrounds.json';
+import { publicAsset } from '../utils/assets';
 import { AgentChatWidget } from './AgentChatWidget';
 import { AtmosphereBackground } from './AtmosphereBackground';
 import { Navbar } from './Navbar';
@@ -17,12 +18,12 @@ export function Layout({ activePage, children, onNavigate }: LayoutProps) {
   const [contentHidden, setContentHidden] = useState(false);
   const backgroundImage = useMemo(() => {
     const candidates = backgrounds.filter((item) => item.path && !item.path.toLowerCase().endsWith('/badge.webp'));
-    const fallback = '/photo/declan-sun-9WvJsfdqjSc-unsplash.jpg';
+    const fallback = publicAsset('/photo/declan-sun-9WvJsfdqjSc-unsplash.jpg');
     if (candidates.length === 0) {
       return fallback;
     }
 
-    return candidates[Math.floor(Math.random() * candidates.length)].path;
+    return publicAsset(candidates[Math.floor(Math.random() * candidates.length)].path);
   }, []);
 
   const shellStyle = {
