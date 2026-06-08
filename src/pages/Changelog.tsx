@@ -7,11 +7,7 @@ import changelog from '../data/changelog.json';
 export function Changelog() {
   return (
     <motion.div className="mx-auto max-w-5xl space-y-8" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-      <SectionHeader
-        eyebrow="Changelog"
-        title="更新日志"
-        description="这里记录站点每一次重要变化。更新内容来自 src/data/changelog.json。"
-      />
+      <SectionHeader eyebrow="Changelog" title="更新日志" description="这里记录站点每一次重要变化。更新内容来自 src/data/changelog.json。" />
 
       <section className="relative space-y-6 pl-8 md:pl-12">
         <div className="absolute bottom-0 left-3 top-0 w-px bg-white/20 md:left-5" />

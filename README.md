@@ -1,152 +1,168 @@
 # 校园学习服务站 MVP
 
-这是一个面向学生日常学习生活的轻量级校园功能型网站。第一版以静态前端为主，提供考试时钟、倒计时、考试进度、学习资源导航、校园图库、今日作息、关于本站和免责声明。
+这是一个面向高中学生与校友的校园服务与交流网站。项目从静态学习工具起步，现已扩展为包含论坛后端、Neon 数据库、Render API、Doubao / Ark 校园智能导航助手，以及 Netlify / GitHub Pages 双前端部署的完整 MVP。
 
-## 功能列表
+## 当前状态
 
-- 首页：展示学校占位名称、今日日期时间、今日作息、近期考试入口、资源入口、图库入口和今日标语。
-- 考试时钟：支持考试类型切换、当前科目展示、开始时间、结束时间、当前时间、状态文案和进度条。
-- 临时限时训练：可输入科目、日期、开始时间、结束时间，数据保存在浏览器本地。
-- 大屏辅助：考试时钟支持全屏显示和背景切换。
-- 学习资源：以卡片形式展示资源分类、描述、标签和链接。
-- 校园图库：展示占位背景、标题、作者、来源和版权说明。
-- 关于本站：包含项目介绍、维护者说明、投稿与反馈占位、版权与免责声明。
+- 前端：Vite + React + TypeScript + Tailwind CSS
+- 后端：Express + Prisma
+- 数据库：PostgreSQL，当前使用 Neon
+- 后端部署：Render
+- 前端部署：Netlify 与 GitHub Pages 均支持
+- AI 能力：Doubao / Ark OpenAI-compatible API
 
-## 技术栈
+## 网站功能
 
-- Vite
-- React
-- TypeScript
-- CSS
-- JSON 数据文件
+- 首页：展示校园学习入口、日期时间、学习提醒和主要功能导航。
+- 学习资源：包含每日一题、背单词、随机点名、倒计时、官方资源入口等学习工具。
+- 论坛社区：支持注册登录、发帖、评论、点赞、举报和管理员处理。
+- 大学话题区：支持按大学/城市维护话题区，并统计相关帖子。
+- 校园图册：展示校园图片素材和说明。
+- 更新日志：通过 `src/data/changelog.json` 维护网站迭代记录。
+- 关于本站：展示项目说明、维护者说明和免责声明。
+- 校园助手：右下角 AI Agent，可回答网站功能、搜索资源和论坛、推荐标签、生成发帖草稿。
 
-## 本地运行
+## 校园智能导航助手
+
+Agent 前端组件：
+
+```text
+src/components/AgentChatWidget.tsx
+```
+
+Agent 后端接口：
+
+```text
+POST /api/agent/chat
+```
+
+Agent 服务文件：
+
+```text
+server/src/routes/agent.js
+server/src/services/doubaoAgent.js
+server/src/services/agentTools.js
+```
+
+当前支持的工具：
+
+- `get_site_guide`：查询网站功能说明
+- `search_posts`：搜索论坛帖子，优先使用真实数据库
+- `search_resources`：搜索学习资源、考试、大学信息等站内内容
+- `recommend_tags`：推荐论坛标签
+- `draft_post`：生成发帖草稿，不自动发布
+
+Agent 不会自动发布、删除、审核、封禁或修改用户资料。
+
+## 本地开发
+
+安装依赖：
 
 ```bash
 npm install
+```
+
+启动后端：
+
+```bash
+npm run server:dev
+```
+
+启动前端：
+
+```bash
 npm run dev
 ```
 
-开发服务器启动后，按终端提示打开本地地址，一般为：
+本地默认地址：
 
-```bash
+```text
 http://localhost:5173
 ```
 
-## 打包部署
+如果端口被占用，Vite 可能自动切换到 `http://localhost:5174`。
 
-```bash
-npm run build
+## 环境变量
+
+本地开发使用 `.env`。不要把真实 `.env` 提交到仓库。
+
+关键变量：
+
+```env
+DATABASE_URL="Neon 或其他 PostgreSQL 连接串"
+JWT_SECRET="本地或生产 JWT 密钥"
+CLIENT_ORIGINS="http://localhost:5173,http://localhost:5174,https://your-netlify-site.netlify.app,https://your-github-username.github.io"
+ARK_API_KEY="Doubao / Ark API Key"
+ARK_MODEL_ID="doubao-seed-2-0-lite-260428"
+ARK_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
 ```
 
-构建产物会生成在 `dist` 目录，可以部署到任意静态站点服务。
+前端部署变量：
 
-## 数据维护方式
-
-所有第一版内容都放在 `src/data` 目录：
-
-- `src/data/exams.json`：考试安排和科目时间。
-- `src/data/schedule.json`：今日作息。
-- `src/data/resources.json`：学习资源导航。
-- `src/data/gallery.json`：校园图库和时钟背景占位素材。
-- `src/data/changelog.json`：更新日志时间线。
-- `src/data/webmasterNotes.json`：关于本站中的“站长有话说”。
-- `public/backgrounds/campus-bg.jpg`：全站照片背景，后续可替换为授权校园照片。
-
-## 如何新增考试安排
-
-打开 `src/data/exams.json`，新增一个考试对象：
-
-```json
-{
-  "id": "example-exam",
-  "name": "示例考试",
-  "origin": "教务处",
-  "notice": "请以学校实际通知为准。",
-  "subjects": [
-    {
-      "name": "数学",
-      "date": "2026-06-01",
-      "start": "09:00",
-      "end": "11:00"
-    }
-  ]
-}
+```env
+VITE_BASE_PATH="/"
+VITE_API_BASE_URL="https://your-render-service.onrender.com/api"
 ```
 
-日期使用 `YYYY-MM-DD`，时间使用 24 小时制 `HH:mm`。
+Netlify 通常不需要设置 `VITE_API_BASE_URL`，因为项目保留了 `netlify.toml` 中的 `/api` 代理。GitHub Pages 必须设置 `VITE_API_BASE_URL` 指向 Render 后端。
 
-## 如何新增学习资源
+## 部署结构
 
-打开 `src/data/resources.json`，新增资源对象：
-
-```json
-{
-  "title": "资源名称",
-  "description": "一句话说明这个资源适合做什么。",
-  "url": "https://example.com",
-  "category": "课程学习资源",
-  "tags": ["学习", "课程"]
-}
+```text
+Netlify 或 GitHub Pages 前端
+        ↓
+Render 后端 API
+        ↓
+Neon PostgreSQL
+        ↓
+Doubao / Ark 模型服务
 ```
 
-如果还没有真实链接，可以暂时使用 `"#"` 作为占位。
+详细部署说明见：
 
-## 如何新增图库图片
-
-打开 `src/data/gallery.json`，新增图片对象：
-
-```json
-{
-  "id": "campus-photo-1",
-  "title": "校园照片标题",
-  "author": "投稿人或来源",
-  "description": "图片说明。",
-  "image": "linear-gradient(135deg, #dbeafe 0%, #fef3c7 100%)",
-  "license": "投稿授权"
-}
+```text
+DEPLOYMENT.md
 ```
 
-第一版使用渐变占位。后续如使用真实照片，请确保拥有授权，再将 `image` 字段替换为图片路径或 URL。
+## 数据维护
 
-## 如何更新日志
+静态内容主要在：
 
-打开 `src/data/changelog.json`，新增一条记录：
-
-```json
-{
-  "date": "2026年5月1日",
-  "lead": "更新标题",
-  "text": "这里写具体更新内容。"
-}
+```text
+src/data/
 ```
 
-页面会按 JSON 中的顺序展示。想让最新内容在最上方，就把新记录放到数组最前面。
+常用文件：
 
-## 如何更新站长有话说
+- `src/data/changelog.json`：网站更新日志
+- `src/data/resources.json`：学习资源
+- `src/data/exams.json`：考试安排
+- `src/data/universities.json`：大学信息
+- `src/data/gallery.json`：图册内容
+- `src/data/webmasterNotes.json`：站长说明
+- `src/data/dailyQuestions.json`：每日一题
+- `src/data/words.json`：背单词词库
 
-打开 `src/data/webmasterNotes.json`，新增或修改内容：
+如果修改公共图片、音频等素材，请放入：
 
-```json
-{
-  "title": "一段标题",
-  "content": "这里写站长想说的话。"
-}
+```text
+public/
 ```
 
-保存后，“关于本站”页面会自动同步。
+并在代码中使用 `src/utils/assets.ts` 中的 `publicAsset()` 生成路径，保证 Netlify 和 GitHub Pages 都能正确加载资源。
 
-## 如何替换全站背景图
+## 重要里程碑
 
-将授权校园照片放到 `public/backgrounds/` 目录，并命名为 `campus-bg.jpg`。建议使用横向照片，分辨率不低于 1920x1080。
+- 2026-04-29：完成第一版静态 MVP。
+- 2026-05-03：完成视觉产品化升级。
+- 2026-05-22：增强论坛社区后端能力。
+- 2026-06-03：完成 Neon 数据库、Render 后端、Doubao / Ark Agent 联调。
+- 2026-06-04：支持 Netlify 与 GitHub Pages 双前端部署。
+- 2026-06-09：同步项目进度、说明文档和网站更新日志。
 
-## 免责声明
+## 注意事项
 
-本站由学生团队维护，内容仅供学习和校园服务参考。考试时间、作息安排等信息请以学校官方通知、老师通知和实际铃声为准。图片和资料如涉及版权问题，请联系维护者删除或修改。
-
-## 后续开发计划
-
-- 将占位数据替换为学校真实、可公开、已授权内容。
-- 为考试时钟增加更多背景来源和大屏模式细节。
-- 增加按年级、学科或标签筛选资源的能力。
-- 在后端准备好后，再考虑管理后台、投稿审核、登录和数据接口。
+- 不要把 `.env`、数据库连接串、Ark API Key 提交到仓库。
+- Netlify 的 `/api` 代理配置保留在 `netlify.toml`，不要删除。
+- GitHub Pages 没有 `/api` 代理，因此需要 `VITE_API_BASE_URL` 指向 Render。
+- Render 后端需要用 `CLIENT_ORIGINS` 允许 Netlify、GitHub Pages 和本地域名。
