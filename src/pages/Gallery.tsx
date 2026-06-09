@@ -44,7 +44,7 @@ const emptyAreaForm = { name: '', city: '', description: '' };
 const emptyPostForm = { title: '', content: '', imageUrl: '' };
 
 function panelClass(className = '') {
-  return `rounded-[28px] border border-white/10 bg-emerald-950/35 shadow-[0_22px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl ${className}`;
+  return `rounded-[28px] border border-white/10 bg-white/[0.045] shadow-[0_22px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl ${className}`;
 }
 
 function lightPanelClass(className = '') {
@@ -378,7 +378,7 @@ export function Gallery() {
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {mergedAreas.map((area, index) => (
           <motion.button
-            className="overflow-hidden rounded-[28px] border border-white/10 bg-emerald-950/35 text-left shadow-[0_18px_54px_rgba(0,0,0,0.2)] backdrop-blur-xl transition hover:-translate-y-1 hover:bg-emerald-950/45"
+            className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.045] text-left shadow-[0_18px_54px_rgba(0,0,0,0.2)] backdrop-blur-xl transition hover:-translate-y-1 hover:bg-white/[0.08]"
             key={`${area.name}-${area.id}`}
             onClick={() => openArea(area)}
             initial={{ opacity: 0, y: 16 }}

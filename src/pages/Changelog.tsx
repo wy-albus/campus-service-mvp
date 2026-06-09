@@ -23,7 +23,7 @@ export function Changelog() {
             <div className="absolute -left-[31px] top-6 grid h-7 w-7 place-items-center rounded-full border border-white/20 bg-[#10231f]/82 shadow-[0_8px_20px_rgba(0,0,0,0.18)] backdrop-blur-md md:-left-[43px]">
               <GitCommitHorizontal size={15} className={index === 0 ? 'text-campus-300' : 'text-white/80'} />
             </div>
-            <div className="rounded-[30px] border border-white/10 bg-emerald-950/35 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl">
+            <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl">
               <div className="flex flex-wrap items-center gap-3">
                 <time className="rounded-full bg-white/[0.08] px-3 py-1 text-sm font-semibold text-white/55 backdrop-blur-sm">{item.date}</time>
                 {index === 0 && <Badge tone="green">最新</Badge>}

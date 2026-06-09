@@ -384,7 +384,7 @@ export function Forum() {
       </section>
 
       {message && (
-        <div className="rounded-2xl border border-white/10 bg-emerald-950/45 px-4 py-3 text-sm text-white/80 backdrop-blur-xl">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.055] px-4 py-3 text-sm text-white/80 backdrop-blur-xl">
           {message}
         </div>
       )}

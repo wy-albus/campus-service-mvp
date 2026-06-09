@@ -24,7 +24,7 @@ export function Dialog({ open, title, description, children, onClose }: DialogPr
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="pointer-events-auto w-full max-w-2xl overflow-hidden rounded-[32px] border border-white/12 bg-emerald-950/50 shadow-[0_24px_90px_rgba(0,0,0,0.34)] backdrop-blur-2xl"
+            className="pointer-events-auto w-full max-w-2xl overflow-hidden rounded-[32px] border border-white/12 bg-white/[0.055] shadow-[0_24px_90px_rgba(0,0,0,0.34)] backdrop-blur-2xl"
             initial={{ opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}

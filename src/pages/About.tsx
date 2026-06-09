@@ -122,7 +122,7 @@ export function About() {
 
   return (
     <motion.div className="relative min-h-[calc(100vh-140px)]" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-      <aside className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 gap-2 rounded-full border border-white/10 bg-emerald-950/35 p-2 shadow-[0_16px_46px_rgba(0,0,0,0.22)] backdrop-blur-xl md:bottom-auto md:left-5 md:top-1/2 md:-translate-x-0 md:-translate-y-1/2 md:flex-col">
+      <aside className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 gap-2 rounded-full border border-white/10 bg-white/[0.045] p-2 shadow-[0_16px_46px_rgba(0,0,0,0.22)] backdrop-blur-xl md:bottom-auto md:left-5 md:top-1/2 md:-translate-x-0 md:-translate-y-1/2 md:flex-col">
         {sections.map((item) => {
           const Icon = item.icon;
           return (
@@ -159,7 +159,7 @@ export function About() {
               transition={{ duration: 0.25 }}
             >
               <button
-                className="rounded-full border border-white/10 bg-emerald-950/35 px-7 py-4 text-base font-semibold text-white/90 shadow-[0_18px_54px_rgba(0,0,0,0.22)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/[0.12]"
+                className="rounded-full border border-white/10 bg-white/[0.045] px-7 py-4 text-base font-semibold text-white/90 shadow-[0_18px_54px_rgba(0,0,0,0.22)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:bg-white/[0.12]"
                 onClick={() => setShowContent(true)}
                 aria-label="显示关于本站内容"
               >
@@ -175,7 +175,7 @@ export function About() {
               exit={{ opacity: 0, y: 12 }}
               transition={{ duration: 0.28 }}
             >
-              <div className="flex flex-wrap items-end justify-between gap-4 rounded-[32px] border border-white/10 bg-emerald-950/35 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl md:p-8">
+              <div className="flex flex-wrap items-end justify-between gap-4 rounded-[32px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl md:p-8">
                 <div>
                   <Badge tone="green">About</Badge>
                   <h1 className="mt-4 text-3xl font-semibold leading-tight text-white/95 md:text-5xl">关于本站</h1>
@@ -196,7 +196,7 @@ export function About() {
                     <motion.article
                       id={item.id}
                       key={item.id}
-                      className="scroll-mt-28 rounded-[30px] border border-white/10 bg-emerald-950/35 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl md:p-7"
+                      className="scroll-mt-28 rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl md:p-7"
                       initial={{ opacity: 0, y: 18 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, margin: '-80px' }}

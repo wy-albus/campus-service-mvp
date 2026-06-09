@@ -67,7 +67,7 @@ export function Home({ onNavigate: _onNavigate }: HomeProps) {
               <AnimatePresence>
                 {gradeMenuOpen && (
                   <motion.div
-                    className="absolute right-0 top-14 z-30 grid w-32 gap-1 rounded-2xl border border-white/10 bg-campus-900/62 p-2 shadow-soft backdrop-blur-xl"
+                    className="absolute right-0 top-14 z-30 grid w-32 gap-1 rounded-2xl border border-white/10 bg-white/[0.055] p-2 shadow-soft backdrop-blur-xl"
                     initial={{ opacity: 0, y: -6, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.98 }}

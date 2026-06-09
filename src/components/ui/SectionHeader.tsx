@@ -14,7 +14,7 @@ export function SectionHeader({ eyebrow, title, description, action, className }
   return (
     <div
       className={cn(
-        'rounded-[30px] border border-white/10 bg-[linear-gradient(115deg,rgba(6,24,21,0.54),rgba(0,0,0,0.28)_58%,rgba(255,255,255,0.04))] p-6 shadow-[0_18px_56px_rgba(0,0,0,0.2)] backdrop-blur-xl md:p-8',
+        'rounded-[30px] border border-white/10 bg-white/[0.045] p-6 shadow-[0_18px_56px_rgba(0,0,0,0.2)] backdrop-blur-xl md:p-8',
         'flex flex-col gap-5 md:flex-row md:items-end md:justify-between',
         className,
       )}

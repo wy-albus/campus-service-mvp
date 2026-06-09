@@ -103,7 +103,7 @@ function useAlarmSound() {
 function ToolPanel({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <motion.article
-      className={`rounded-[28px] border border-white/10 bg-emerald-950/35 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl md:p-6 ${className}`}
+      className={`rounded-[28px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl md:p-6 ${className}`}
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32 }}
@@ -131,7 +131,7 @@ function ModuleCard({ tool, onOpen }: { tool: (typeof tools)[number]; onOpen: (i
   const Icon = tool.icon;
   return (
     <button
-      className={`group min-h-[220px] rounded-[28px] border border-white/10 bg-emerald-950/35 p-5 text-left shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-200 hover:-translate-y-1 hover:bg-emerald-950/45 ${
+      className={`group min-h-[220px] rounded-[28px] border border-white/10 bg-white/[0.045] p-5 text-left shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl transition duration-200 hover:-translate-y-1 hover:bg-white/[0.08] ${
         tool.featured ? 'lg:col-span-6' : 'lg:col-span-4'
       }`}
       onClick={() => onOpen(tool.id)}
@@ -513,7 +513,7 @@ export function Resources() {
     const Icon = activeMeta.icon;
     return (
       <motion.div className="mx-auto max-w-5xl space-y-6" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-        <div className="rounded-[30px] border border-white/10 bg-emerald-950/35 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl md:p-6">
+        <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl md:p-6">
           <Button variant="subtle" onClick={() => setActiveTool(null)} aria-label="返回学习工具箱">
             <ArrowLeft size={17} />
             返回工具箱

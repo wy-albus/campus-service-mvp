@@ -52,7 +52,7 @@ export function Navbar({ activePage, contentHidden, onNavigate, onToggleContent 
 
         <nav
           className={cn(
-            'absolute left-3 right-3 top-[72px] hidden flex-col gap-1 rounded-3xl border border-white/10 bg-campus-900/55 p-2 shadow-soft backdrop-blur-xl lg:static lg:flex lg:flex-row lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none',
+            'absolute left-3 right-3 top-[72px] hidden flex-col gap-1 rounded-3xl border border-white/10 bg-white/[0.055] p-2 shadow-soft backdrop-blur-xl lg:static lg:flex lg:flex-row lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none',
             open && 'flex',
           )}
         >

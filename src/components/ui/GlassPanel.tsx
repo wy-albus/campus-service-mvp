@@ -10,7 +10,7 @@ export function GlassPanel({ children, className, as: Tag = 'section', ...props 
   return (
     <Tag
       className={cn(
-        'noise-panel rounded-[32px] border border-white/10 bg-emerald-950/35 shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl',
+        'noise-panel rounded-[32px] border border-white/10 bg-white/[0.045] shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-xl',
         className,
       )}
       {...props}
