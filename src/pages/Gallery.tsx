@@ -7,6 +7,7 @@ import { Dialog } from '../components/ui/Dialog';
 import { Input } from '../components/ui/Input';
 import { apiRequest, type ForumUser } from '../lib/api';
 import seedUniversities from '../data/universities.json';
+import { publicAsset } from '../utils/assets';
 
 type UniversityArea = {
   id: number | string;
@@ -42,6 +43,20 @@ type Comment = {
 const seedAreas = seedUniversities as UniversityArea[];
 const emptyAreaForm = { name: '', city: '', description: '' };
 const emptyPostForm = { title: '', content: '', imageUrl: '' };
+
+const universityLogos: Record<string, string> = {
+  '\u7535\u5b50\u79d1\u6280\u5927\u5b66': publicAsset('/logos/universities/uestc.png'),
+  '\u5b89\u5fbd\u5927\u5b66': publicAsset('/logos/universities/ahu.png'),
+  '\u6e05\u534e\u5927\u5b66': publicAsset('/logos/universities/tsinghua.png'),
+  '\u5317\u4eac\u5927\u5b66': publicAsset('/logos/universities/pku.png'),
+  '\u897f\u5b89\u4ea4\u901a\u5927\u5b66': publicAsset('/logos/universities/xjtu.png'),
+  '\u56db\u5ddd\u5927\u5b66': publicAsset('/logos/universities/scu.png'),
+};
+
+function getUniversityLogo(name: string) {
+  const compactName = name.replace(/\s/g, '');
+  return Object.entries(universityLogos).find(([key]) => compactName.includes(key))?.[1];
+}
 
 function panelClass(className = '') {
   return `rounded-[28px] border border-white/10 bg-white/[0.045] shadow-[0_22px_70px_rgba(0,0,0,0.22)] backdrop-blur-xl ${className}`;
@@ -376,7 +391,10 @@ export function Gallery() {
       {feedback && <div className="rounded-2xl border border-amber-200/20 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-50">{feedback}</div>}
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {mergedAreas.map((area, index) => (
+        {mergedAreas.map((area, index) => {
+          const logo = getUniversityLogo(area.name);
+
+          return (
           <motion.button
             className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.045] text-left shadow-[0_18px_54px_rgba(0,0,0,0.2)] backdrop-blur-xl transition hover:-translate-y-1 hover:bg-white/[0.08]"
             key={`${area.name}-${area.id}`}
@@ -385,10 +403,14 @@ export function Gallery() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: index * 0.04 }}
           >
-            <div className="relative grid min-h-[190px] place-items-center" style={{ background: area.cover || seedAreas[index % seedAreas.length]?.cover }}>
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.34),transparent_30%),linear-gradient(180deg,transparent,rgba(8,21,19,0.28))]" />
-              <div className="relative grid h-16 w-16 place-items-center rounded-3xl border border-white/35 bg-white/20 text-campus-950 backdrop-blur-md">
-                <GraduationCap size={30} />
+            <div className="relative grid min-h-[190px] place-items-center overflow-hidden" style={{ background: area.cover || seedAreas[index % seedAreas.length]?.cover }}>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.34),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.18),rgba(8,21,19,0.24))]" />
+              <div className="relative grid h-[118px] w-[172px] place-items-center rounded-[26px] border border-white/30 bg-white/[0.72] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                {logo ? (
+                    <img className="max-h-full max-w-full object-contain" src={logo} alt={`${area.name}\u6821\u5fbd`} loading="lazy" />
+                ) : (
+                  <GraduationCap size={34} className="text-campus-950" />
+                )}
               </div>
             </div>
             <div className="p-5">
@@ -404,8 +426,9 @@ export function Gallery() {
                 ))}
               </div>
             </div>
-          </motion.button>
-        ))}
+            </motion.button>
+          );
+        })}
       </section>
 
       <section className={lightPanelClass('p-6')}>
