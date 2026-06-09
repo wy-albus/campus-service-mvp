@@ -396,20 +396,21 @@ export function Gallery() {
 
           return (
           <motion.button
-            className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.045] text-left shadow-[0_18px_54px_rgba(0,0,0,0.2)] backdrop-blur-xl transition hover:-translate-y-1 hover:bg-white/[0.08]"
+            className="overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.065),rgba(255,255,255,0.035))] text-left shadow-[0_18px_54px_rgba(0,0,0,0.2)] backdrop-blur-xl transition hover:-translate-y-1 hover:bg-white/[0.08]"
             key={`${area.name}-${area.id}`}
             onClick={() => openArea(area)}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: index * 0.04 }}
           >
-            <div className="relative grid min-h-[190px] place-items-center overflow-hidden" style={{ background: area.cover || seedAreas[index % seedAreas.length]?.cover }}>
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.34),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.18),rgba(8,21,19,0.24))]" />
-              <div className="relative grid h-[118px] w-[172px] place-items-center rounded-[26px] border border-white/30 bg-white/[0.72] p-5 shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+            <div className="relative grid min-h-[170px] place-items-center overflow-hidden border-b border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.09),rgba(255,255,255,0.035)_46%,rgba(0,0,0,0.16))]">
+              <div className="absolute inset-x-8 top-8 h-px bg-white/20" />
+              <div className="absolute inset-x-12 bottom-8 h-px bg-white/10" />
+              <div className="relative grid h-[96px] w-[196px] place-items-center rounded-[22px] border border-white/[0.14] bg-black/[0.26] px-6 py-5 shadow-[0_18px_48px_rgba(0,0,0,0.2)] backdrop-blur-xl">
                 {logo ? (
-                    <img className="max-h-full max-w-full object-contain" src={logo} alt={`${area.name}\u6821\u5fbd`} loading="lazy" />
+                    <img className="max-h-full max-w-full object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.28)]" src={logo} alt={`${area.name}\u6821\u5fbd`} loading="lazy" />
                 ) : (
-                  <GraduationCap size={34} className="text-campus-950" />
+                  <GraduationCap size={34} className="text-white/80" />
                 )}
               </div>
             </div>
