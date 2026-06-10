@@ -5,6 +5,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Dialog } from '../components/ui/Dialog';
 import { Input } from '../components/ui/Input';
+import { apiRequest } from '../lib/api';
 
 type AboutContent = {
   intro: string;
@@ -13,6 +14,7 @@ type AboutContent = {
 };
 
 const STORAGE_KEY = 'about-page-content';
+const emptyFeedbackForm = { name: '', contact: '', content: '' };
 
 const defaultAboutContent: AboutContent = {
   intro:
@@ -61,6 +63,9 @@ export function About() {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [authMessage, setAuthMessage] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
+  const [feedbackForm, setFeedbackForm] = useState(emptyFeedbackForm);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
 
   useEffect(() => {
     const storedContent = readStoredContent();
@@ -118,6 +123,25 @@ export function About() {
   const exitAdmin = () => {
     setIsAdminVerified(false);
     closeAdmin();
+  };
+
+  const submitFeedback = async () => {
+    setFeedbackMessage('');
+    if (feedbackForm.content.trim().length < 4) {
+      setFeedbackMessage('请至少写 4 个字的反馈内容。');
+      return;
+    }
+
+    setFeedbackSubmitting(true);
+    try {
+      await apiRequest('/feedback', { method: 'POST', body: JSON.stringify(feedbackForm) });
+      setFeedbackForm(emptyFeedbackForm);
+      setFeedbackMessage('反馈已提交，感谢你的建议。');
+    } catch (error) {
+      setFeedbackMessage(error instanceof Error ? error.message : '反馈提交失败，请稍后再试。');
+    } finally {
+      setFeedbackSubmitting(false);
+    }
   };
 
   return (
@@ -212,6 +236,38 @@ export function About() {
                         <span className="text-sm font-semibold text-emerald-200/45">0{index + 1}</span>
                       </div>
                       <p className="max-w-4xl whitespace-pre-wrap text-sm leading-7 text-white/75 md:text-base">{aboutContent[item.key]}</p>
+                      {item.key === 'feedback' && (
+                        <div className="mt-6 grid gap-3 rounded-[24px] border border-white/10 bg-black/[0.16] p-4">
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <Input
+                              value={feedbackForm.name}
+                              onChange={(event) => setFeedbackForm((value) => ({ ...value, name: event.target.value }))}
+                              placeholder="称呼（可选）"
+                              aria-label="反馈称呼"
+                            />
+                            <Input
+                              value={feedbackForm.contact}
+                              onChange={(event) => setFeedbackForm((value) => ({ ...value, contact: event.target.value }))}
+                              placeholder="联系方式（可选）"
+                              aria-label="反馈联系方式"
+                            />
+                          </div>
+                          <textarea
+                            className="min-h-[130px] w-full resize-y rounded-[22px] border border-white/10 bg-white/[0.06] p-4 text-sm leading-7 text-white/90 outline-none transition placeholder:text-white/[0.35] focus:border-campus-300/50 focus:bg-white/[0.08] focus:ring-4 focus:ring-campus-300/10"
+                            value={feedbackForm.content}
+                            onChange={(event) => setFeedbackForm((value) => ({ ...value, content: event.target.value }))}
+                            placeholder="写下你遇到的问题、建议或想补充的内容"
+                            aria-label="反馈内容"
+                          />
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            {feedbackMessage && <p className="text-sm font-semibold text-campus-300">{feedbackMessage}</p>}
+                            <Button className="ml-auto" disabled={feedbackSubmitting} onClick={submitFeedback}>
+                              <MessageSquare size={17} />
+                              {feedbackSubmitting ? '提交中...' : '提交反馈'}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </motion.article>
                   );
                 })}

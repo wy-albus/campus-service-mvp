@@ -45,6 +45,23 @@ type Report = {
   handled: boolean;
   createdAt: string;
   reporter: { username: string; email: string };
+  target?: {
+    id: number;
+    postId: number;
+    title?: string;
+    excerpt: string;
+    isDeleted: boolean;
+    author?: { username: string };
+  } | null;
+};
+type Feedback = {
+  id: number;
+  name: string;
+  contact: string;
+  content: string;
+  handled: boolean;
+  createdAt: string;
+  submitter?: { username: string; email: string } | null;
 };
 type UserProfile = {
   id: number;
@@ -148,6 +165,8 @@ export function Forum() {
   const [reportReason, setReportReason] = useState('');
   const [reportsOpen, setReportsOpen] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackItems, setFeedbackItems] = useState<Feedback[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
   const [message, setMessage] = useState('');
   const [authError, setAuthError] = useState('');
@@ -335,6 +354,34 @@ export function Forum() {
     await loadReports();
   };
 
+  const deleteReportTarget = async (id: number) => {
+    await apiRequest(`/admin/reports/${id}/delete-target`, { method: 'POST' });
+    setMessage('被举报内容已删除');
+    await loadReports();
+    await loadPosts();
+  };
+
+  const jumpToReportTarget = async (report: Report) => {
+    const postId = report.target?.postId || (report.targetType === 'POST' ? report.targetId : 0);
+    if (!postId) {
+      setMessage('目标内容不存在或已删除');
+      return;
+    }
+    await loadPost(postId);
+    setReportsOpen(false);
+  };
+
+  const loadFeedback = async () => {
+    const data = await apiRequest<{ feedback: Feedback[] }>('/admin/feedback');
+    setFeedbackItems(data.feedback);
+    setFeedbackOpen(true);
+  };
+
+  const handleFeedback = async (id: number) => {
+    await apiRequest(`/admin/feedback/${id}/handle`, { method: 'POST' });
+    await loadFeedback();
+  };
+
   const openReport = (targetType: 'POST' | 'COMMENT', targetId: number) => {
     if (!user) {
       setMessage('请先登录后再举报');
@@ -366,10 +413,16 @@ export function Forum() {
                   发布帖子
                 </Button>
                 {isAdmin && (
-                  <Button variant="subtle" onClick={loadReports}>
-                    <Shield size={17} />
-                    举报管理
-                  </Button>
+                  <>
+                    <Button variant="subtle" onClick={loadReports}>
+                      <Shield size={17} />
+                      举报管理
+                    </Button>
+                    <Button variant="subtle" onClick={loadFeedback}>
+                      <MessageSquare size={17} />
+                      反馈管理
+                    </Button>
+                  </>
                 )}
                 <Button variant="ghost" onClick={() => { clearToken(); setUser(null); }}>退出</Button>
               </>
@@ -723,15 +776,66 @@ export function Forum() {
 
       <Dialog open={reportsOpen} title="举报管理" onClose={() => setReportsOpen(false)}>
         <div className="max-h-[60vh] space-y-3 overflow-y-auto">
+          {!reports.length && <p className="rounded-2xl border border-white/10 bg-black/[0.14] p-4 text-sm text-white/70">暂无举报。</p>}
           {reports.map((report) => (
             <article className="rounded-2xl border border-white/10 bg-black/[0.14] p-4" key={report.id}>
               <div className="flex flex-wrap justify-between gap-3">
                 <p className="text-sm font-semibold text-white/90">{report.targetType} #{report.targetId}</p>
                 <Badge tone={report.handled ? 'slate' : 'amber'}>{report.handled ? '已处理' : '待处理'}</Badge>
               </div>
+              <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3">
+                <p className="text-xs font-semibold text-white/45">
+                  {report.target?.isDeleted ? '目标已删除' : '被举报内容'}
+                  {report.target?.author?.username ? ` · ${report.target.author.username}` : ''}
+                </p>
+                {report.target?.title && <p className="mt-1 text-sm font-semibold text-white/90">{report.target.title}</p>}
+                <p className="mt-1 text-sm leading-6 text-white/70">{report.target?.excerpt || '目标内容不存在或已删除。'}</p>
+              </div>
               <p className="mt-2 text-sm leading-6 text-white/70">{report.reason}</p>
               <p className="mt-2 text-xs text-white/50">举报人：{report.reporter.username} · {formatTime(report.createdAt)}</p>
-              {!report.handled && <Button className="mt-3" variant="secondary" size="sm" onClick={() => handleReport(report.id)}>标记处理</Button>}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {report.target && !report.target.isDeleted && (
+                  <Button variant="subtle" size="sm" onClick={() => jumpToReportTarget(report)}>
+                    查看内容
+                  </Button>
+                )}
+                {!report.handled && (
+                  <Button variant="secondary" size="sm" onClick={() => handleReport(report.id)}>
+                    标记处理
+                  </Button>
+                )}
+                {report.target && !report.target.isDeleted && (
+                  <Button className="bg-red-200 text-red-950 hover:bg-red-100" size="sm" onClick={() => deleteReportTarget(report.id)}>
+                    <Trash2 size={15} />
+                    删除内容
+                  </Button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      </Dialog>
+
+      <Dialog open={feedbackOpen} title="反馈管理" onClose={() => setFeedbackOpen(false)}>
+        <div className="max-h-[60vh] space-y-3 overflow-y-auto">
+          {!feedbackItems.length && <p className="rounded-2xl border border-white/10 bg-black/[0.14] p-4 text-sm text-white/70">暂无反馈。</p>}
+          {feedbackItems.map((item) => (
+            <article className="rounded-2xl border border-white/10 bg-black/[0.14] p-4" key={item.id}>
+              <div className="flex flex-wrap justify-between gap-3">
+                <p className="text-sm font-semibold text-white/90">{item.name || item.submitter?.username || '匿名反馈'}</p>
+                <Badge tone={item.handled ? 'slate' : 'amber'}>{item.handled ? '已处理' : '待处理'}</Badge>
+              </div>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-white/75">{item.content}</p>
+              <p className="mt-3 text-xs leading-5 text-white/50">
+                {item.contact ? `联系方式：${item.contact} · ` : ''}
+                {item.submitter ? `账号：${item.submitter.username} <${item.submitter.email}> · ` : ''}
+                {formatTime(item.createdAt)}
+              </p>
+              {!item.handled && (
+                <Button className="mt-3" variant="secondary" size="sm" onClick={() => handleFeedback(item.id)}>
+                  标记处理
+                </Button>
+              )}
             </article>
           ))}
         </div>

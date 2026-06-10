@@ -30,6 +30,7 @@ model User {
   likes        Like[]
   reports      Report[]  @relation("ReporterReports")
   handled      Report[]  @relation("HandledReports")
+  feedback     Feedback[]
 }
 
 model Post {
@@ -96,5 +97,17 @@ model Report {
   handled     Boolean          @default(false)
   handledById Int?
   handledBy   User?            @relation("HandledReports", fields: [handledById], references: [id])
+  handledAt   DateTime?
+}
+
+model Feedback {
+  id          Int      @id @default(autoincrement())
+  name        String   @default("")
+  contact     String   @default("")
+  content     String
+  submitterId Int?
+  submitter   User?    @relation(fields: [submitterId], references: [id])
+  handled     Boolean  @default(false)
+  createdAt   DateTime @default(now())
   handledAt   DateTime?
 }

@@ -63,6 +63,12 @@ export const reportSchema = z.object({
   reason: z.string().trim().min(2).max(500),
 });
 
+export const feedbackSchema = z.object({
+  name: z.string().trim().max(40).default(''),
+  contact: z.string().trim().max(120).default(''),
+  content: z.string().trim().min(4).max(1200),
+});
+
 export function parseBody(schema, body) {
   const result = schema.safeParse(body);
   if (!result.success) {

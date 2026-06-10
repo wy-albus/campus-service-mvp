@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { registerGuard } from '../middleware/registerGuard.js';
 import { loginSchema, parseBody, registerSchema } from '../utils/validators.js';
 
 export const authRouter = Router();
@@ -15,7 +16,7 @@ function publicUser(user) {
   return { id: user.id, username: user.username, email: user.email, role: user.role, createdAt: user.createdAt };
 }
 
-authRouter.post('/register', async (req, res, next) => {
+authRouter.post('/register', registerGuard, async (req, res, next) => {
   try {
     const data = parseBody(registerSchema, req.body);
     const passwordHash = await bcrypt.hash(data.password, 12);
