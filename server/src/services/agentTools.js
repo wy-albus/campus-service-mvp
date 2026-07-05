@@ -238,13 +238,13 @@ export async function recommendTags(args = {}) {
   const matches = [];
 
   const rules = [
-    ['美食', ['食堂', '吃饭', '饭菜', '窗口', '排队', '午餐', '晚餐']],
-    ['吐槽', ['太慢', '不满', '吐槽', '建议', '问题', '体验']],
+    ['美食', ['食堂', '吃饭', '饭菜', '菜', '难吃', '窗口', '排队', '午餐', '晚餐']],
+    ['吐槽', ['太慢', '不满', '吐槽', '难吃', '不好吃', '建议', '问题', '体验']],
     ['求助', ['求助', '怎么办', '请问', '帮我', '需要']],
     ['学习', ['学习', '复习', '作业', '考试', '资料', '题']],
     ['比赛', ['比赛', '竞赛', '组队', '报名', '获奖']],
-    ['活动', ['活动', '运动会', '社团', '征集', '报名', '假期']],
-    ['旅游', ['旅游', '出行', '路线', '景点', '出去玩']],
+    ['活动', ['活动', '运动会', '社团', '征集', '报名', '假期', '暑假']],
+    ['旅游', ['旅游', '出行', '路线', '景点', '出去玩', '去哪', '去哪儿', '玩']],
     ['情感', ['情感', '心情', '压力', '朋友', '同学关系']],
     ['经验分享', ['经验', '分享', '方法', '攻略']],
   ];
@@ -266,6 +266,9 @@ export async function recommendTags(args = {}) {
 
 function getDraftIntent(topic, tone) {
   const text = `${topic} ${tone}`;
+  if (/吐槽|难吃|不好吃|太慢|不满|离谱|无语/.test(text)) {
+    return 'rant';
+  }
   if (/问问|大家.*(怎么|有没有|准备|打算)|怎么过|安排|计划|聊聊|分享/.test(text)) {
     return 'interaction';
   }
@@ -278,11 +281,21 @@ function getDraftIntent(topic, tone) {
 function cleanTopic(topic) {
   return topic
     .replace(/^(我想|想)?(在)?(论坛|社区)?(里)?(发帖|发一个帖子|发一篇帖子)[，,。 ]*/g, '')
+    .replace(/^(我想|想|我要|要)?(在)?(论坛|社区)?(里)?(发帖子|发个帖子)[，,。 ]*/g, '')
+    .replace(/(，|,|。)?请你?(帮我)?(写写|写|生成|起草)(一下)?(草稿|帖子|标题)?/g, '')
+    .replace(/(，|,|。)?我要?(在)?(论坛|社区)?(里)?发(个|一个|一篇)?帖子?/g, '')
+    .replace(/(，|,|。)?吐槽一下/g, '')
     .replace(/^(在)?(论坛|社区)(里)?[，,。 ]*/g, '')
     .replace(/^(想)?问问大家/, '')
     .replace(/^(关于|有关)/, '')
-    .replace(/(的一点建议|的建议|帖子|发帖)$/g, '')
+    .replace(/(的一点建议|的建议|帖子|发帖|草稿)$/g, '')
     .trim();
+}
+
+function makeInteractionTitle(subject) {
+  if (/暑假.*(去哪|去哪儿|哪里|玩)/.test(subject)) return '大家暑假都打算去哪儿玩？';
+  if (/假期.*(怎么过|如何度过|安排|计划)/.test(subject)) return '大家假期都准备怎么过？';
+  return subject.endsWith('吗') || subject.endsWith('？') ? subject : `${subject}？`;
 }
 
 export async function draftPost(args = {}) {
@@ -296,8 +309,17 @@ export async function draftPost(args = {}) {
 
   if (intent === 'interaction') {
     return {
-      title: subject.includes('假期') ? '大家假期都准备怎么过？' : `大家${subject}吗？`,
-      content: `想问问大家${subject}。有人已经有安排或计划了吗？欢迎在评论里分享一下，也可以互相推荐有意思的活动、地点或实用安排。`,
+      title: makeInteractionTitle(subject),
+      content: `想问问大家${subject}。有人已经安排好了吗？欢迎在评论里分享一下，也可以互相推荐好玩的地方、活动或者实用安排。`,
+      tags,
+      note: '这是 AI 生成的发帖草稿，不会自动发布；请你确认、修改后再手动发布。',
+    };
+  }
+
+  if (intent === 'rant') {
+    return {
+      title: subject.includes('食堂') ? '想吐槽一下食堂的菜' : `想吐槽一下：${subject}`,
+      content: `最近真的有点想吐槽${subject}。不知道大家有没有类似感受，也欢迎在评论里说说具体是哪道菜、哪个窗口或者哪次体验比较明显。希望后面能越做越好。`,
       tags,
       note: '这是 AI 生成的发帖草稿，不会自动发布；请你确认、修改后再手动发布。',
     };

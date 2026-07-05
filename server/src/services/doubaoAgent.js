@@ -303,7 +303,7 @@ function planLocalTool(message) {
   if (/草稿|帮我写|发帖|帖子.*写|委婉|标题/.test(text)) {
     const tagMatch = text.match(/(吐槽|学习|活动|比赛|旅游|情感|美食|求助|经验分享)/);
     const topicMatch = text.match(/关于(.+?)(?:的|，|,|。|帖子|帖|$)/);
-    const topic = topicMatch?.[1]?.trim() || text.replace(/我想|帮我|写得|一点|帖子|发一个|发一篇|的/g, '').trim();
+    const topic = topicMatch?.[1]?.trim() || extractDraftTopic(text);
     return {
       toolName: 'draft_post',
       arguments: {
@@ -339,6 +339,19 @@ function planLocalTool(message) {
   }
 
   return { toolName: 'get_site_guide', arguments: {} };
+}
+
+function extractDraftTopic(text) {
+  return String(text || '')
+    .replace(/^(我想|想|我要|要)?(在)?(论坛|社区)?(里)?(发一个帖子|发一篇帖子|发个帖子|发帖子|发帖)[，,。 ]*/g, '')
+    .replace(/(，|,|。)?请你?(帮我)?(写写|写|生成|起草)(一下)?(草稿|帖子|标题)?/g, '')
+    .replace(/(，|,|。)?(帮我)?写得(委婉|正式|轻松|自然)?(一点)?/g, '')
+    .replace(/(，|,|。)?我要?(在)?(论坛|社区)?(里)?发(个|一个|一篇)?帖子?/g, '')
+    .replace(/(，|,|。)?我想(在)?(论坛|社区)?(里)?发(个|一个|一篇)?帖子?/g, '')
+    .replace(/(，|,|。)?吐槽一下/g, '')
+    .replace(/帖子|草稿/g, '')
+    .replace(/^的/, '')
+    .trim();
 }
 
 function shouldUseLocalFastPath(message, plan) {

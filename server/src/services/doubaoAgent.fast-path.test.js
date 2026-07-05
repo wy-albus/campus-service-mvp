@@ -29,3 +29,22 @@ test('runCampusAgent drafts simple forum posts without requiring model credentia
     }
   }
 });
+
+test('runCampusAgent keeps travel interaction drafts natural', async () => {
+  const result = await runCampusAgent('我想发帖子，问问大家暑假都打算去哪儿玩');
+
+  assert.deepEqual(result.usedTools, ['draft_post']);
+  assert.match(result.reply, /标题：大家暑假都打算去哪儿玩？/);
+  assert.doesNotMatch(result.reply, /大家发|问问大家发|问问大家子|子，问问|求助/);
+  assert.doesNotMatch(result.reply, /优化流程|引导分流|学习和生活安排/);
+});
+
+test('runCampusAgent writes cafeteria complaints as rants instead of process suggestions', async () => {
+  const result = await runCampusAgent('食堂的菜好难吃，我要发个帖子吐槽一下，请你帮我写写草稿');
+
+  assert.deepEqual(result.usedTools, ['draft_post']);
+  assert.match(result.reply, /吐槽|食堂/);
+  assert.match(result.reply, /难吃|口味|菜/);
+  assert.doesNotMatch(result.reply, /优化流程|引导分流|学习和生活安排/);
+  assert.doesNotMatch(result.reply, /请你帮我写|我要发个帖子|吐槽一下.*吐槽一下/);
+});
