@@ -21,7 +21,11 @@ const SYSTEM_PROMPT = `你是校园服务网站的「校园智能导航助手」
 7. 涉及删除、封禁、审核、举报处理时，只能给建议，不能直接执行；
 8. 不要泄露用户隐私；
 9. 回答要简洁、清楚，适合高中生和校友理解；
-10. 如果信息不足，请明确说明，而不是胡编。`;
+10. 如果信息不足，请明确说明，而不是胡编。
+发帖草稿规则：
+1. 先判断用户想写的是互动帖、求助帖、建议帖、吐槽帖还是经验分享帖；
+2. 必须保留用户的真实意图和语气，不要把互动帖、闲聊帖或提问帖改写成建议/投诉帖；
+3. 用户只是想“问问大家”“聊聊”“分享一下”时，正文要像自然的论坛互动，不要编造流程优化、引导分流、负责人处理等内容。`;
 
 const tools = [
   {
@@ -86,7 +90,7 @@ const tools = [
     type: 'function',
     function: {
       name: 'draft_post',
-      description: '帮助用户生成论坛发帖草稿。只生成草稿，不发布。',
+      description: '帮助用户生成论坛发帖草稿。只生成草稿，不发布。必须保留用户原始意图：互动帖写成自然提问，求助帖写成请教，建议帖才写成改进建议。',
       parameters: {
         type: 'object',
         properties: {
@@ -337,6 +341,23 @@ function planLocalTool(message) {
   return { toolName: 'get_site_guide', arguments: {} };
 }
 
+function shouldUseLocalFastPath(message, plan) {
+  const text = String(message || '');
+  if (plan.safety || plan.toolName === 'draft_post' || plan.toolName === 'recommend_tags') {
+    return true;
+  }
+  if (plan.toolName === 'search_posts') {
+    return /论坛|帖子|有没有|比赛|活动|求助|吐槽/.test(text);
+  }
+  if (plan.toolName === 'search_resources') {
+    return /资源|学习|每日一题|背单词|考试|复习|大学/.test(text);
+  }
+  if (plan.toolName === 'get_site_guide') {
+    return /功能|网站|怎么用|导航|页面|有哪些/.test(text);
+  }
+  return false;
+}
+
 function formatLocalReply(message, toolName, result, safety = false) {
   if (safety) {
     return '我不能直接删除、审核或封禁内容，也不会替你执行管理员操作。如果帖子确实需要处理，可以先记录帖子链接或编号，再联系管理员确认。';
@@ -387,8 +408,27 @@ async function runLocalFallback(message, reason) {
   return { reply, usedTools };
 }
 
+async function runLocalFastPath(message, plan) {
+  const usedTools = [];
+  let result = null;
+
+  if (plan.toolName !== 'none') {
+    result = await executeTool(plan.toolName, plan.arguments, usedTools);
+  }
+
+  const reply = formatLocalReply(message, plan.toolName, result, plan.safety);
+  safeLog('fast path reply', reply);
+  return { reply, usedTools };
+}
+
 export async function runCampusAgent(message) {
   safeLog('user message', message);
+  const localPlan = planLocalTool(message);
+
+  if (shouldUseLocalFastPath(message, localPlan)) {
+    return runLocalFastPath(message, localPlan);
+  }
+
   const { client, model } = getClient();
 
   try {

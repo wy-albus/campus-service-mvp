@@ -243,8 +243,8 @@ export async function recommendTags(args = {}) {
     ['求助', ['求助', '怎么办', '请问', '帮我', '需要']],
     ['学习', ['学习', '复习', '作业', '考试', '资料', '题']],
     ['比赛', ['比赛', '竞赛', '组队', '报名', '获奖']],
-    ['活动', ['活动', '运动会', '社团', '征集', '报名']],
-    ['旅游', ['旅游', '出行', '路线', '景点']],
+    ['活动', ['活动', '运动会', '社团', '征集', '报名', '假期']],
+    ['旅游', ['旅游', '出行', '路线', '景点', '出去玩']],
     ['情感', ['情感', '心情', '压力', '朋友', '同学关系']],
     ['经验分享', ['经验', '分享', '方法', '攻略']],
   ];
@@ -264,19 +264,60 @@ export async function recommendTags(args = {}) {
   };
 }
 
+function getDraftIntent(topic, tone) {
+  const text = `${topic} ${tone}`;
+  if (/问问|大家.*(怎么|有没有|准备|打算)|怎么过|安排|计划|聊聊|分享/.test(text)) {
+    return 'interaction';
+  }
+  if (/求助|怎么办|请问|有没有人知道|帮忙/.test(text)) {
+    return 'help';
+  }
+  return 'suggestion';
+}
+
+function cleanTopic(topic) {
+  return topic
+    .replace(/^(我想|想)?(在)?(论坛|社区)?(里)?(发帖|发一个帖子|发一篇帖子)[，,。 ]*/g, '')
+    .replace(/^(在)?(论坛|社区)(里)?[，,。 ]*/g, '')
+    .replace(/^(想)?问问大家/, '')
+    .replace(/^(关于|有关)/, '')
+    .replace(/(的一点建议|的建议|帖子|发帖)$/g, '')
+    .trim();
+}
+
 export async function draftPost(args = {}) {
   const topic = String(args.topic || args.content || '校园问题').trim();
   const tone = String(args.tone || '委婉').trim();
   const tag = String(args.tag || '').trim();
   const recommended = await recommendTags({ content: `${topic} ${tag}` });
   const tags = tag && allowedTags.includes(tag) ? [tag, ...recommended.tags.filter((item) => item !== tag)].slice(0, 3) : recommended.tags;
+  const intent = getDraftIntent(topic, tone);
+  const subject = cleanTopic(topic) || topic;
+
+  if (intent === 'interaction') {
+    return {
+      title: subject.includes('假期') ? '大家假期都准备怎么过？' : `大家${subject}吗？`,
+      content: `想问问大家${subject}。有人已经有安排或计划了吗？欢迎在评论里分享一下，也可以互相推荐有意思的活动、地点或实用安排。`,
+      tags,
+      note: '这是 AI 生成的发帖草稿，不会自动发布；请你确认、修改后再手动发布。',
+    };
+  }
+
+  if (intent === 'help') {
+    return {
+      title: `想请教一下：${subject}`,
+      content: `想向大家请教一下${subject}。如果有同学了解相关经验、注意事项或解决办法，欢迎分享一下，先谢谢大家。`,
+      tags,
+      note: '这是 AI 生成的发帖草稿，不会自动发布；请你确认、修改后再手动发布。',
+    };
+  }
 
   return {
-    title: `关于${topic}的一点建议`,
+    title: `关于${subject}的一点建议`,
     content:
       tone.includes('直接') || tone.includes('强硬')
-        ? `最近关于${topic}的问题比较影响大家的体验，希望相关同学或负责老师可以关注并尽快优化。也欢迎大家补充具体情况，一起把问题说清楚。`
-        : `最近我注意到${topic}可能会影响一些同学的学习和生活安排。想委婉地提个建议：如果后续能适当优化流程、增加提醒或引导分流，大家的体验应该会更顺畅。也欢迎有类似感受的同学一起补充。`,
+        ? `最近关于${subject}的问题比较影响大家的体验，希望相关同学或负责老师可以关注并尽快优化。也欢迎大家补充具体情况，一起把问题说清楚。`
+        : `最近我注意到${subject}可能会影响一些同学的学习和生活安排。想委婉地提个建议：如果后续能适当优化流程、增加提醒或引导分流，大家的体验应该会更顺畅。也欢迎有类似感受的同学一起补充。`,
     tags,
     note: '这是 AI 生成的发帖草稿，不会自动发布；请你确认、修改后再手动发布。',
   };
