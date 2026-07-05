@@ -2,6 +2,36 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runCampusAgent } from './doubaoAgent.js';
 
+function makeDraftClient(responseContent) {
+  const calls = [];
+  return {
+    calls,
+    client: {
+      chat: {
+        completions: {
+          create: async (payload) => {
+            calls.push(payload);
+            return {
+              choices: [
+                {
+                  message: {
+                    content: responseContent,
+                  },
+                },
+              ],
+            };
+          },
+        },
+      },
+    },
+    model: 'test-model',
+  };
+}
+
+function noModel() {
+  throw new Error('model disabled for test');
+}
+
 test('runCampusAgent drafts simple forum posts without requiring model credentials', async () => {
   const previous = {
     ARK_API_KEY: process.env.ARK_API_KEY,
@@ -31,7 +61,9 @@ test('runCampusAgent drafts simple forum posts without requiring model credentia
 });
 
 test('runCampusAgent keeps travel interaction drafts natural', async () => {
-  const result = await runCampusAgent('我想发帖子，问问大家暑假都打算去哪儿玩');
+  const result = await runCampusAgent('我想发帖子，问问大家暑假都打算去哪儿玩', {
+    getClient: noModel,
+  });
 
   assert.deepEqual(result.usedTools, ['draft_post']);
   assert.match(result.reply, /标题：大家暑假都打算去哪儿玩？/);
@@ -40,11 +72,34 @@ test('runCampusAgent keeps travel interaction drafts natural', async () => {
 });
 
 test('runCampusAgent writes cafeteria complaints as rants instead of process suggestions', async () => {
-  const result = await runCampusAgent('食堂的菜好难吃，我要发个帖子吐槽一下，请你帮我写写草稿');
+  const result = await runCampusAgent('食堂的菜好难吃，我要发个帖子吐槽一下，请你帮我写写草稿', {
+    getClient: noModel,
+  });
 
   assert.deepEqual(result.usedTools, ['draft_post']);
   assert.match(result.reply, /吐槽|食堂/);
   assert.match(result.reply, /难吃|口味|菜/);
   assert.doesNotMatch(result.reply, /优化流程|引导分流|学习和生活安排/);
   assert.doesNotMatch(result.reply, /请你帮我写|我要发个帖子|吐槽一下.*吐槽一下/);
+});
+
+test('runCampusAgent uses one model call for draft posts when a model is available', async () => {
+  const fake = makeDraftClient(
+    JSON.stringify({
+      title: '食堂的菜最近是不是有点难吃？',
+      content: '最近感觉食堂有些菜味道不太稳定，想问问大家有没有同感，也欢迎推荐一下最近比较好吃的窗口。',
+      tags: ['吐槽', '美食'],
+    }),
+  );
+
+  const result = await runCampusAgent('食堂的菜好难吃，我要发个帖子吐槽一下，请你帮我写写草稿', {
+    getClient: () => fake,
+  });
+
+  assert.equal(fake.calls.length, 1);
+  assert.deepEqual(result.usedTools, ['draft_post']);
+  assert.match(result.reply, /食堂的菜最近是不是有点难吃？/);
+  assert.match(result.reply, /味道不太稳定/);
+  assert.doesNotMatch(result.reply, /优化流程|引导分流|学习和生活安排/);
+  assert.equal(fake.calls[0].tools, undefined);
 });
