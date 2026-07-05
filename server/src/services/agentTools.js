@@ -239,7 +239,7 @@ export async function recommendTags(args = {}) {
 
   const rules = [
     ['美食', ['食堂', '吃饭', '饭菜', '菜', '难吃', '窗口', '排队', '午餐', '晚餐']],
-    ['吐槽', ['太慢', '不满', '吐槽', '难吃', '不好吃', '建议', '问题', '体验']],
+    ['吐槽', ['太慢', '不满', '吐槽', '难吃', '不好吃', '崩溃', '难受', '压力', '累', '烦', '离谱', '无语', '建议', '问题', '体验']],
     ['求助', ['求助', '怎么办', '请问', '帮我', '需要']],
     ['学习', ['学习', '复习', '作业', '考试', '资料', '题']],
     ['比赛', ['比赛', '竞赛', '组队', '报名', '获奖']],
@@ -264,9 +264,9 @@ export async function recommendTags(args = {}) {
   };
 }
 
-function getDraftIntent(topic, tone) {
-  const text = `${topic} ${tone}`;
-  if (/吐槽|难吃|不好吃|太慢|不满|离谱|无语/.test(text)) {
+function getDraftIntent(topic, tone, tag) {
+  const text = `${topic} ${tone} ${tag}`;
+  if (/吐槽|难吃|不好吃|太慢|不满|崩溃|难受|压力|焦虑|累|烦|离谱|无语|不爽|破防/.test(text)) {
     return 'rant';
   }
   if (/问问|大家.*(怎么|有没有|准备|打算)|怎么过|安排|计划|聊聊|分享/.test(text)) {
@@ -298,13 +298,44 @@ function makeInteractionTitle(subject) {
   return subject.endsWith('吗') || subject.endsWith('？') ? subject : `${subject}？`;
 }
 
+function cleanRantSubject(subject) {
+  return String(subject || '')
+    .replace(/^这次的?/, '')
+    .replace(/[，,。 ]*好?崩溃了?$/g, '')
+    .replace(/[，,。 ]*真的?崩溃了?$/g, '')
+    .trim();
+}
+
+function makeRantDraft(subject) {
+  const coreSubject = cleanRantSubject(subject) || subject;
+
+  if (/食堂|饭菜|菜|窗口|吃饭/.test(subject)) {
+    return {
+      title: subject.includes('食堂') ? '想吐槽一下食堂的菜' : `想吐槽一下：${subject}`,
+      content: `最近真的有点想吐槽${subject}。不知道大家有没有类似感受，也欢迎在评论里说说具体是哪道菜、哪个窗口或者哪次体验比较明显。希望后面能越做越好。`,
+    };
+  }
+
+  if (/考试|模拟考|模考|作业|复习|成绩|题/.test(subject)) {
+    return {
+      title: `想吐槽一下：${coreSubject}`,
+      content: `这次${coreSubject}真的有点难到崩溃。不知道大家是不是也有类似感受，欢迎一起聊聊哪部分最难、怎么调整心态，或者有没有什么复盘方法。`,
+    };
+  }
+
+  return {
+    title: `想吐槽一下：${subject}`,
+    content: `最近真的有点想吐槽${subject}。不知道大家有没有类似感受，欢迎在评论里一起聊聊具体情况，也可以互相支支招。`,
+  };
+}
+
 export async function draftPost(args = {}) {
   const topic = String(args.topic || args.content || '校园问题').trim();
   const tone = String(args.tone || '委婉').trim();
   const tag = String(args.tag || '').trim();
   const recommended = await recommendTags({ content: `${topic} ${tag}` });
   const tags = tag && allowedTags.includes(tag) ? [tag, ...recommended.tags.filter((item) => item !== tag)].slice(0, 3) : recommended.tags;
-  const intent = getDraftIntent(topic, tone);
+  const intent = getDraftIntent(topic, tone, tag);
   const subject = cleanTopic(topic) || topic;
 
   if (intent === 'interaction') {
@@ -317,9 +348,10 @@ export async function draftPost(args = {}) {
   }
 
   if (intent === 'rant') {
+    const draft = makeRantDraft(subject);
     return {
-      title: subject.includes('食堂') ? '想吐槽一下食堂的菜' : `想吐槽一下：${subject}`,
-      content: `最近真的有点想吐槽${subject}。不知道大家有没有类似感受，也欢迎在评论里说说具体是哪道菜、哪个窗口或者哪次体验比较明显。希望后面能越做越好。`,
+      title: draft.title,
+      content: draft.content,
       tags,
       note: '这是 AI 生成的发帖草稿，不会自动发布；请你确认、修改后再手动发布。',
     };
