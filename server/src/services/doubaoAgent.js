@@ -27,6 +27,8 @@ const SYSTEM_PROMPT = `你是校园服务网站的「校园智能导航助手」
 2. 必须保留用户的真实意图和语气，不要把互动帖、闲聊帖或提问帖改写成建议/投诉帖；
 3. 用户只是想“问问大家”“聊聊”“分享一下”时，正文要像自然的论坛互动，不要编造流程优化、引导分流、负责人处理等内容。`;
 
+const DRAFT_MODEL_TIMEOUT_MS = Number(process.env.AGENT_DRAFT_TIMEOUT_MS || 12000);
+
 const tools = [
   {
     type: 'function',
@@ -151,6 +153,14 @@ function parseArgs(raw) {
 function safeLog(label, value) {
   const text = typeof value === 'string' ? value : JSON.stringify(value);
   console.log(`[Agent] ${label}: ${text?.slice(0, 1200) || ''}`);
+}
+
+function withTimeout(promise, timeoutMs, label) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
 }
 
 function isDraftRequest(message) {
@@ -356,7 +366,7 @@ function extractDraftTopic(text) {
 
 function shouldUseLocalFastPath(message, plan) {
   const text = String(message || '');
-  if (plan.safety || plan.toolName === 'draft_post' || plan.toolName === 'recommend_tags') {
+  if (plan.safety || plan.toolName === 'recommend_tags') {
     return true;
   }
   if (plan.toolName === 'search_posts') {
@@ -369,6 +379,75 @@ function shouldUseLocalFastPath(message, plan) {
     return /功能|网站|怎么用|导航|页面|有哪些/.test(text);
   }
   return false;
+}
+
+function getClientFromOptions(options = {}) {
+  return typeof options.getClient === 'function' ? options.getClient() : getClient();
+}
+
+function formatDraftReply(draft) {
+  return `可以，下面是一版草稿：\n标题：${draft.title}\n正文：${draft.content}\n推荐标签：${draft.tags.join('、')}\n提醒：这是 AI 生成的发帖草稿，不会自动发布；请你确认、修改后再手动发布。`;
+}
+
+function normalizeDraftModelResult(text) {
+  const parsed = parseJsonObject(text);
+  if (!parsed || typeof parsed.title !== 'string' || typeof parsed.content !== 'string') {
+    return null;
+  }
+
+  const rawTags = Array.isArray(parsed.tags) ? parsed.tags : [];
+  const tags = rawTags.map((tag) => String(tag).trim()).filter(Boolean).slice(0, 3);
+
+  return {
+    title: parsed.title.trim(),
+    content: parsed.content.trim(),
+    tags: tags.length > 0 ? tags : ['求助'],
+  };
+}
+
+async function runDraftModel(message, client, model, timeoutMs = DRAFT_MODEL_TIMEOUT_MS) {
+  const prompt = `用户想让你帮忙写一篇校园论坛帖子草稿。
+
+请理解用户真实意图，而不是机械套模板。你需要判断它是互动帖、吐槽帖、求助帖、建议帖、经验分享帖或其他自然帖子。
+
+要求：
+- 只写用户真正想发的帖子，不要把闲聊/提问/吐槽强行改成“建议帖”。
+- 不要编造“优化流程、引导分流、影响学习和生活安排”等用户没提到的内容。
+- 去掉“我想发帖、帮我写草稿、请你”等指令性外壳。
+- 语气自然，像高中生/校友在论坛里发帖。
+- 输出 JSON 对象，不要 Markdown，不要解释。
+- JSON 字段：title 字符串，content 字符串，tags 字符串数组。tags 只能从这些里面选 1-3 个：吐槽、学习、活动、比赛、旅游、情感、美食、求助、经验分享。
+
+用户输入：${message}`;
+
+  const response = await withTimeout(
+    client.chat.completions.create({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: '你是校园论坛发帖草稿助手。你的强项是理解用户真实发帖意图，并写出自然、贴题、不过度发挥的中文草稿。',
+        },
+        { role: 'user', content: prompt },
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.4,
+      max_tokens: 500,
+    }),
+    timeoutMs,
+    'draft model request',
+  );
+
+  const content = response.choices?.[0]?.message?.content || '';
+  const draft = normalizeDraftModelResult(content);
+  if (!draft) {
+    throw new Error('draft model returned invalid JSON');
+  }
+
+  return {
+    reply: formatDraftReply(draft),
+    usedTools: ['draft_post'],
+  };
 }
 
 function formatLocalReply(message, toolName, result, safety = false) {
@@ -400,7 +479,7 @@ function formatLocalReply(message, toolName, result, safety = false) {
   }
 
   if (toolName === 'draft_post') {
-    return `可以，下面是一版草稿：\n标题：${result.title}\n正文：${result.content}\n推荐标签：${result.tags.join('、')}\n提醒：${result.note}`;
+    return formatDraftReply(result);
   }
 
   return `我已收到你的问题：“${message}”。我可以帮你查询网站功能、学习资源、论坛帖子，或生成发帖草稿。`;
@@ -434,15 +513,27 @@ async function runLocalFastPath(message, plan) {
   return { reply, usedTools };
 }
 
-export async function runCampusAgent(message) {
+export async function runCampusAgent(message, options = {}) {
   safeLog('user message', message);
   const localPlan = planLocalTool(message);
+
+  if (localPlan.toolName === 'draft_post') {
+    try {
+      const { client, model } = getClientFromOptions(options);
+      const result = await runDraftModel(message, client, model, options.draftTimeoutMs ?? DRAFT_MODEL_TIMEOUT_MS);
+      safeLog('draft model reply', result.reply);
+      return result;
+    } catch (error) {
+      console.warn('[Agent] draft model failed, using local fallback:', error.message);
+      return runLocalFastPath(message, localPlan);
+    }
+  }
 
   if (shouldUseLocalFastPath(message, localPlan)) {
     return runLocalFastPath(message, localPlan);
   }
 
-  const { client, model } = getClient();
+  const { client, model } = getClientFromOptions(options);
 
   try {
     return await runToolCalling(client, model, message);
