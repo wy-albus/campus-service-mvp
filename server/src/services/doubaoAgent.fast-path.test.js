@@ -83,6 +83,19 @@ test('runCampusAgent writes cafeteria complaints as rants instead of process sug
   assert.doesNotMatch(result.reply, /请你帮我写|我要发个帖子|吐槽一下.*吐槽一下/);
 });
 
+test('runCampusAgent treats emotional exam complaints as rants in fallback', async () => {
+  const result = await runCampusAgent('这次的模拟考试好难啊，好崩溃，我想发帖吐槽一下', {
+    getClient: noModel,
+  });
+
+  assert.deepEqual(result.usedTools, ['draft_post']);
+  assert.match(result.reply, /模拟考试|考试/);
+  assert.match(result.reply, /难|崩溃|吐槽/);
+  assert.doesNotMatch(result.reply, /一点建议|优化流程|引导分流|学习和生活安排/);
+  assert.doesNotMatch(result.reply, /哪道菜|窗口/);
+  assert.doesNotMatch(result.reply, /被这次|好崩溃整崩溃/);
+});
+
 test('runCampusAgent uses one model call for draft posts when a model is available', async () => {
   const fake = makeDraftClient(
     JSON.stringify({
