@@ -156,37 +156,43 @@ export async function searchPosts(args = {}) {
   const query = String(args.query || '').trim();
   const tag = String(args.tag || '').trim();
   const limit = clampLimit(args.limit, 5, POST_SEARCH_LIMIT);
+  const keywords = Array.isArray(args.keywords) ? args.keywords.map((item) => String(item).trim()).filter(Boolean) : [];
+  const searchTerms = keywords.length > 0 ? keywords : query ? [query] : [];
 
   try {
     const where = {
       isDeleted: false,
       ...(tag ? { tag } : {}),
-      ...(query
+      ...(searchTerms.length > 0
         ? {
-            OR: [
-              { title: { contains: query, mode: 'insensitive' } },
-              { content: { contains: query, mode: 'insensitive' } },
-              { tag: { contains: query, mode: 'insensitive' } },
-            ],
+            OR: searchTerms.flatMap((term) => [
+              { title: { contains: term, mode: 'insensitive' } },
+              { content: { contains: term, mode: 'insensitive' } },
+              { tag: { contains: term, mode: 'insensitive' } },
+            ]),
           }
         : {}),
     };
 
-    const posts = await prisma.post.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      select: {
-        id: true,
-        title: true,
-        content: true,
-        tag: true,
-        createdAt: true,
-      },
-    });
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          tag: true,
+          createdAt: true,
+        },
+      }),
+      prisma.post.count({ where }),
+    ]);
 
     return {
       source: 'database',
+      total,
       items: posts.map((post) => ({
         id: post.id,
         title: post.title,
@@ -198,7 +204,7 @@ export async function searchPosts(args = {}) {
   } catch (error) {
     console.warn('[Agent] search_posts database fallback:', error.message);
     const filtered = mockPosts
-      .filter((post) => (!tag || post.tag === tag) && (!query || scoreText(post, query)))
+      .filter((post) => (!tag || post.tag === tag) && (searchTerms.length === 0 || searchTerms.some((term) => scoreText(post, term))))
       .slice(0, limit)
       .map((post) => ({
         id: post.id,
@@ -211,9 +217,27 @@ export async function searchPosts(args = {}) {
     return {
       source: 'mock',
       note: '数据库暂时不可用，以下为演示数据。',
+      total: filtered.length,
       items: filtered,
     };
   }
+}
+
+export function formatPostQueryReply(result = {}) {
+  const total = Number(result.total || 0);
+  const items = result.items || [];
+  const scope = result.tag ? `${result.tag}类帖子` : result.query ? `和“${result.query}”相关的帖子` : '帖子';
+
+  if (result.type === 'count') {
+    return `论坛里目前有 ${total} 条${scope}。`;
+  }
+
+  if (items.length === 0) {
+    return `我在论坛里暂时没有找到${scope}，可以换个关键词，或自己发布一篇求助/分享帖。`;
+  }
+
+  const list = items.map((item, index) => `${index + 1}. ${item.title} [${item.tag}]：${item.summary}`).join('\n');
+  return `我在论坛里找到 ${total} 条${scope}。大致总结：大家主要在聊这些方向，可以点进帖子继续看细节。\n${list}`;
 }
 
 export async function searchResources(args = {}) {
