@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { agentToolNames, runAgentTool } from './agentTools.js';
+import { agentToolNames, formatPostQueryReply, runAgentTool } from './agentTools.js';
 
 const SYSTEM_PROMPT = `你是校园服务网站的「校园智能导航助手」。
 网站定位：这是一个面向高中学生和校友的校园服务与交流平台，包含学习资源、每日一题、背单词、论坛社区、大学话题区、校园图册、关于本站等功能。
@@ -167,6 +167,45 @@ function isDraftRequest(message) {
   return /草稿|帮我写|发帖|帖子.*写|委婉|标题/.test(String(message || ''));
 }
 
+export function summarizePostQueryIntent(message) {
+  const text = String(message || '').trim();
+  const tagMatch = text.match(/(吐槽|学习|活动|比赛|旅游|情感|美食|求助|经验分享)/);
+  const travelLike = /暑假|假期|去哪|去哪儿|哪里玩|出去玩|旅游|出游/.test(text);
+  const countLike = /多少|几条|总数|一共|共有|数量/.test(text);
+  const summaryLike = /总结|概括|大家.*(想|打算|准备|聊|说|推荐)|最近.*(去哪|哪里|玩|聊|说)|都.*(去哪|哪里|玩)/.test(text);
+  const tag = tagMatch?.[1] || (travelLike ? '旅游' : undefined);
+
+  if (!/论坛|帖子/.test(text) && !travelLike && !summaryLike) {
+    return { type: 'none', query: text };
+  }
+
+  if (countLike) {
+    return {
+      type: 'count',
+      tag,
+      query: tag ? '' : text.replace(/论坛|帖子|多少|几条|总数|一共|共有|数量|现在|目前|类|的|有|吗|？|\?/g, '').trim(),
+      keywords: [],
+    };
+  }
+
+  if (summaryLike || travelLike) {
+    const keywords = travelLike ? ['暑假', '假期', '去哪', '去哪儿', '哪里', '玩', '旅游', '出游'] : [];
+    return {
+      type: 'summary',
+      tag,
+      query: text.replace(/论坛|帖子|最近|大家|都|打算|准备|有没有|相关|的|吗|？|\?/g, '').trim() || text,
+      keywords,
+    };
+  }
+
+  return {
+    type: 'search',
+    tag,
+    query: tag ? '' : text.replace(/论坛|帖子|有没有|关于|里|的/g, '').trim(),
+    keywords: [],
+  };
+}
+
 async function executeTool(toolName, args, usedTools) {
   if (!agentToolNames.includes(toolName)) {
     return null;
@@ -175,6 +214,11 @@ async function executeTool(toolName, args, usedTools) {
   safeLog('selected tool', toolName);
   safeLog('tool args', args);
   const result = await runAgentTool(toolName, args || {});
+  if (toolName === 'search_posts' && result) {
+    result.postQueryType = args?.postQueryType || 'search';
+    result.tag = args?.tag || '';
+    result.query = args?.query || '';
+  }
   usedTools.push(toolName);
   safeLog('tool result', result);
   return result;
@@ -328,14 +372,17 @@ function planLocalTool(message) {
     return { toolName: 'recommend_tags', arguments: { content: text } };
   }
 
-  if (/论坛|帖子|有没有|比赛|活动|求助|吐槽/.test(text)) {
+  const postIntent = summarizePostQueryIntent(text);
+  if (postIntent.type !== 'none' || /论坛|帖子|有没有|比赛|活动|求助|吐槽/.test(text)) {
     const tagMatch = text.match(/(吐槽|学习|活动|比赛|旅游|情感|美食|求助|经验分享)/);
     return {
       toolName: 'search_posts',
       arguments: {
-        query: tagMatch?.[1] || text.replace(/论坛|帖子|有没有|关于|里|的/g, '').trim(),
-        tag: tagMatch?.[1],
+        query: postIntent.query || (tagMatch?.[1] ? '' : text.replace(/论坛|帖子|有没有|关于|里|的/g, '').trim()),
+        tag: postIntent.tag || tagMatch?.[1],
+        keywords: postIntent.keywords || [],
         limit: 5,
+        postQueryType: postIntent.type === 'none' ? 'search' : postIntent.type,
       },
     };
   }
@@ -469,6 +516,16 @@ function formatLocalReply(message, toolName, result, safety = false) {
 
   if (toolName === 'search_posts') {
     const items = result.items || [];
+    if (result.postQueryType === 'count' || result.postQueryType === 'summary') {
+      return formatPostQueryReply({
+        type: result.postQueryType,
+        tag: result.tag,
+        query: result.query,
+        total: result.total,
+        items,
+        source: result.source,
+      });
+    }
     if (items.length === 0) return '我在论坛里暂时没有找到相关帖子，可以换个关键词，或自己发布一篇求助/分享帖。';
     const sourceNote = result.source === 'mock' ? '数据库暂时不可用，下面是演示数据：\n' : '我在论坛里找到了这些相关帖子：\n';
     return `${sourceNote}${items.map((item, index) => `${index + 1}. ${item.title} [${item.tag}]：${item.summary}`).join('\n')}`;
