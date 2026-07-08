@@ -36,3 +36,18 @@ test('draftPost removes forum posting command words from interaction posts', asy
   assert.doesNotMatch(result.content, /我想|论坛|发帖/);
   assert.doesNotMatch(result.content, /优化流程|引导分流|影响.*学习和生活/);
 });
+
+test('draftPost writes event posts as activity invitations instead of suggestions', async () => {
+  const result = await draftPost({
+    topic: '帮我写一个运动会的帖子',
+    tone: '自然',
+  });
+
+  assert.match(result.title, /运动会/);
+  assert.match(result.content, /运动会/);
+  assert.match(result.content, /参加|报名|分享|加油|活动/);
+  assert.ok(result.tags.includes('活动'));
+  assert.ok(!result.tags.includes('求助'));
+  assert.doesNotMatch(result.title, /建议|帮我写/);
+  assert.doesNotMatch(result.content, /优化流程|引导分流|学习和生活安排|帮我写/);
+});

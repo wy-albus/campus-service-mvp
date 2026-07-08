@@ -320,6 +320,9 @@ function getDraftIntent(topic, tone, tag) {
   if (/问问|大家.*(怎么|有没有|准备|打算)|怎么过|安排|计划|聊聊|分享/.test(text)) {
     return 'interaction';
   }
+  if (/运动会|社团|活动|报名|招募|征集|比赛|竞赛|志愿者|讲座|晚会|演出/.test(text)) {
+    return 'event';
+  }
   if (/求助|怎么办|请问|有没有人知道|帮忙/.test(text)) {
     return 'help';
   }
@@ -330,6 +333,8 @@ function cleanTopic(topic) {
   return topic
     .replace(/^(我想|想)?(在)?(论坛|社区)?(里)?(发帖|发一个帖子|发一篇帖子)[，,。 ]*/g, '')
     .replace(/^(我想|想|我要|要)?(在)?(论坛|社区)?(里)?(发帖子|发个帖子)[，,。 ]*/g, '')
+    .replace(/^(请你)?帮我(写|写写|生成|起草)(一个|一篇|个|篇)?(关于|有关)?/g, '')
+    .replace(/^(写|写写|生成|起草)(一个|一篇|个|篇)?(关于|有关)?/g, '')
     .replace(/(，|,|。)?请你?(帮我)?(写写|写|生成|起草)(一下)?(草稿|帖子|标题)?/g, '')
     .replace(/(，|,|。)?我要?(在)?(论坛|社区)?(里)?发(个|一个|一篇)?帖子?/g, '')
     .replace(/(，|,|。)?吐槽一下/g, '')
@@ -337,6 +342,7 @@ function cleanTopic(topic) {
     .replace(/^(想)?问问大家/, '')
     .replace(/^(关于|有关)/, '')
     .replace(/(的一点建议|的建议|帖子|发帖|草稿)$/g, '')
+    .replace(/的$/, '')
     .trim();
 }
 
@@ -381,10 +387,10 @@ export async function draftPost(args = {}) {
   const topic = String(args.topic || args.content || '校园问题').trim();
   const tone = String(args.tone || '委婉').trim();
   const tag = String(args.tag || '').trim();
-  const recommended = await recommendTags({ content: `${topic} ${tag}` });
-  const tags = tag && allowedTags.includes(tag) ? [tag, ...recommended.tags.filter((item) => item !== tag)].slice(0, 3) : recommended.tags;
   const intent = getDraftIntent(topic, tone, tag);
   const subject = cleanTopic(topic) || topic;
+  const recommended = await recommendTags({ content: `${subject} ${tag}` });
+  const tags = tag && allowedTags.includes(tag) ? [tag, ...recommended.tags.filter((item) => item !== tag)].slice(0, 3) : recommended.tags;
 
   if (intent === 'interaction') {
     return {
@@ -409,6 +415,15 @@ export async function draftPost(args = {}) {
     return {
       title: `想请教一下：${subject}`,
       content: `想向大家请教一下${subject}。如果有同学了解相关经验、注意事项或解决办法，欢迎分享一下，先谢谢大家。`,
+      tags,
+      note: '这是 AI 生成的发帖草稿，不会自动发布；请你确认、修改后再手动发布。',
+    };
+  }
+
+  if (intent === 'event') {
+    return {
+      title: `${subject}活动帖`,
+      content: `想和大家分享一下${subject}相关的活动信息。对这个活动感兴趣的同学可以一起关注、报名或到现场加油，也欢迎在评论里补充时间安排、参与方式和注意事项。`,
       tags,
       note: '这是 AI 生成的发帖草稿，不会自动发布；请你确认、修改后再手动发布。',
     };
