@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { agentToolNames, formatPostQueryReply, runAgentTool } from './agentTools.js';
+import { agentToolNames, buildPostDiscussionMaterial, formatPostQueryReply, runAgentTool } from './agentTools.js';
 
 const SYSTEM_PROMPT = `你是校园服务网站的「校园智能导航助手」。
 网站定位：这是一个面向高中学生和校友的校园服务与交流平台，包含学习资源、每日一题、背单词、论坛社区、大学话题区、校园图册、关于本站等功能。
@@ -206,14 +206,15 @@ export function summarizePostQueryIntent(message) {
   };
 }
 
-async function executeTool(toolName, args, usedTools) {
+async function executeTool(toolName, args, usedTools, options = {}) {
   if (!agentToolNames.includes(toolName)) {
     return null;
   }
 
   safeLog('selected tool', toolName);
   safeLog('tool args', args);
-  const result = await runAgentTool(toolName, args || {});
+  const toolRunner = typeof options.runTool === 'function' ? options.runTool : runAgentTool;
+  const result = await toolRunner(toolName, args || {});
   if (toolName === 'search_posts' && result) {
     result.postQueryType = args?.postQueryType || 'search';
     result.tag = args?.tag || '';
@@ -497,6 +498,48 @@ async function runDraftModel(message, client, model, timeoutMs = DRAFT_MODEL_TIM
   };
 }
 
+async function runPostSummaryModel(message, result, client, model, timeoutMs = DRAFT_MODEL_TIMEOUT_MS) {
+  const items = result.items || [];
+  const material = buildPostDiscussionMaterial(items);
+  const sampleNote =
+    Number(result.total || 0) + items.reduce((sum, item) => sum + (item.comments?.length || 0), 0) < 3
+      ? '论坛样本很少，回答时必须明确说明“样本很少，只能简单参考”。'
+      : '请根据材料判断主要倾向，不要夸大比例。';
+
+  const prompt = `用户想了解论坛里的讨论趋势。
+
+用户问题：${message}
+
+论坛检索结果：共 ${result.total || items.length} 条相关帖子，以下是可见帖子正文和评论：
+${material || '没有可用材料'}
+
+要求：
+- 只根据上面的帖子和评论总结，不要编造材料之外的信息。
+- ${sampleNote}
+- 直接回答用户关心的趋势，例如“有人在家复习，也有人想去省外旅游”。
+- 如果能看出几类想法，用 2-4 个短点概括。
+- 中文自然、简洁，不要输出帖子列表。`;
+
+  const response = await withTimeout(
+    client.chat.completions.create({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: '你是校园论坛讨论总结助手。你只根据给定帖子和评论归纳趋势，信息不足时要明确说明样本有限，不要编造。',
+        },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.3,
+      max_tokens: 500,
+    }),
+    timeoutMs,
+    'post summary model request',
+  );
+
+  return response.choices?.[0]?.message?.content?.trim() || '';
+}
+
 function formatLocalReply(message, toolName, result, safety = false) {
   if (safety) {
     return '我不能直接删除、审核或封禁内容，也不会替你执行管理员操作。如果帖子确实需要处理，可以先记录帖子链接或编号，再联系管理员确认。';
@@ -542,14 +585,14 @@ function formatLocalReply(message, toolName, result, safety = false) {
   return `我已收到你的问题：“${message}”。我可以帮你查询网站功能、学习资源、论坛帖子，或生成发帖草稿。`;
 }
 
-async function runLocalFallback(message, reason) {
+async function runLocalFallback(message, reason, options = {}) {
   console.warn('[Agent] using local fallback:', reason);
   const usedTools = [];
   const plan = planLocalTool(message);
   let result = null;
 
   if (plan.toolName !== 'none') {
-    result = await executeTool(plan.toolName, plan.arguments, usedTools);
+    result = await executeTool(plan.toolName, plan.arguments, usedTools, options);
   }
 
   const reply = formatLocalReply(message, plan.toolName, result, plan.safety);
@@ -557,16 +600,44 @@ async function runLocalFallback(message, reason) {
   return { reply, usedTools };
 }
 
-async function runLocalFastPath(message, plan) {
+async function runLocalFastPath(message, plan, options = {}) {
   const usedTools = [];
   let result = null;
 
   if (plan.toolName !== 'none') {
-    result = await executeTool(plan.toolName, plan.arguments, usedTools);
+    result = await executeTool(plan.toolName, plan.arguments, usedTools, options);
   }
 
   const reply = formatLocalReply(message, plan.toolName, result, plan.safety);
   safeLog('fast path reply', reply);
+  return { reply, usedTools };
+}
+
+async function runPostSummaryPath(message, plan, options = {}) {
+  const usedTools = [];
+  const toolResult = await executeTool('search_posts', plan.arguments, usedTools, options);
+  const items = toolResult?.items || [];
+
+  if (items.length === 0) {
+    return {
+      reply: formatLocalReply(message, 'search_posts', toolResult),
+      usedTools,
+    };
+  }
+
+  try {
+    const { client, model } = getClientFromOptions(options);
+    const reply = await runPostSummaryModel(message, toolResult, client, model, options.summaryTimeoutMs ?? DRAFT_MODEL_TIMEOUT_MS);
+    if (reply) {
+      safeLog('post summary model reply', reply);
+      return { reply, usedTools };
+    }
+  } catch (error) {
+    console.warn('[Agent] post summary model failed, using local fallback:', error.message);
+  }
+
+  const reply = formatLocalReply(message, 'search_posts', toolResult);
+  safeLog('post summary fallback reply', reply);
   return { reply, usedTools };
 }
 
@@ -582,12 +653,16 @@ export async function runCampusAgent(message, options = {}) {
       return result;
     } catch (error) {
       console.warn('[Agent] draft model failed, using local fallback:', error.message);
-      return runLocalFastPath(message, localPlan);
+      return runLocalFastPath(message, localPlan, options);
     }
   }
 
+  if (localPlan.toolName === 'search_posts' && localPlan.arguments?.postQueryType === 'summary') {
+    return runPostSummaryPath(message, localPlan, options);
+  }
+
   if (shouldUseLocalFastPath(message, localPlan)) {
-    return runLocalFastPath(message, localPlan);
+    return runLocalFastPath(message, localPlan, options);
   }
 
   const { client, model } = getClientFromOptions(options);
@@ -599,7 +674,7 @@ export async function runCampusAgent(message, options = {}) {
     try {
       return await runFallback(client, model, message);
     } catch (fallbackError) {
-      return runLocalFallback(message, fallbackError.message);
+      return runLocalFallback(message, fallbackError.message, options);
     }
   }
 }

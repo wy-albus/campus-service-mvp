@@ -12,6 +12,7 @@ const mockPosts = [
     title: '运动会视频剪辑征集',
     tag: '活动',
     content: '欢迎大家投稿运动会精彩瞬间，可以用于后续活动回顾。',
+    comments: ['可以剪开幕式和接力赛，素材会比较丰富。'],
     createdAt: new Date().toISOString(),
   },
   {
@@ -19,6 +20,7 @@ const mockPosts = [
     title: '高三复习资料整理',
     tag: '学习',
     content: '这里整理了一些数学和英语复习资料，适合日常复习。',
+    comments: ['数学资料很有用，适合假期在家复习。'],
     createdAt: new Date().toISOString(),
   },
   {
@@ -26,6 +28,7 @@ const mockPosts = [
     title: '校园比赛经验分享',
     tag: '比赛',
     content: '分享一些参加校园比赛、准备材料和组队的经验。',
+    comments: ['组队最好提前找好分工。'],
     createdAt: new Date().toISOString(),
   },
 ];
@@ -185,6 +188,14 @@ export async function searchPosts(args = {}) {
           content: true,
           tag: true,
           createdAt: true,
+          comments: {
+            where: { isDeleted: false },
+            orderBy: { createdAt: 'asc' },
+            take: 8,
+            select: {
+              content: true,
+            },
+          },
         },
       }),
       prisma.post.count({ where }),
@@ -197,7 +208,9 @@ export async function searchPosts(args = {}) {
         id: post.id,
         title: post.title,
         tag: post.tag,
+        content: post.content,
         summary: makeSummary(post.content),
+        comments: post.comments.map((comment) => makeSummary(comment.content, 120)),
         createdAt: post.createdAt,
       })),
     };
@@ -210,7 +223,9 @@ export async function searchPosts(args = {}) {
         id: post.id,
         title: post.title,
         tag: post.tag,
+        content: post.content,
         summary: makeSummary(post.content),
+        comments: (post.comments || []).map((comment) => makeSummary(comment, 120)),
         createdAt: post.createdAt,
       }));
 
@@ -221,6 +236,15 @@ export async function searchPosts(args = {}) {
       items: filtered,
     };
   }
+}
+
+export function buildPostDiscussionMaterial(items = []) {
+  return items
+    .map((item, index) => {
+      const comments = item.comments?.length ? item.comments.map((comment, commentIndex) => `  评论 ${commentIndex + 1}：${comment}`).join('\n') : '  暂无评论';
+      return [`帖子 ${index + 1}：${item.title}`, `标签：${item.tag || '未分类'}`, `正文：${item.content || item.summary || ''}`, comments].join('\n');
+    })
+    .join('\n\n');
 }
 
 export function formatPostQueryReply(result = {}) {
