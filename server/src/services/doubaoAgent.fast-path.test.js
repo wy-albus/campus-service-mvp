@@ -99,6 +99,7 @@ test('runCampusAgent treats emotional exam complaints as rants in fallback', asy
 test('runCampusAgent uses one model call for draft posts when a model is available', async () => {
   const fake = makeDraftClient(
     JSON.stringify({
+      intent: 'rant',
       title: '食堂的菜最近是不是有点难吃？',
       content: '最近感觉食堂有些菜味道不太稳定，想问问大家有没有同感，也欢迎推荐一下最近比较好吃的窗口。',
       tags: ['吐槽', '美食'],
@@ -114,5 +115,29 @@ test('runCampusAgent uses one model call for draft posts when a model is availab
   assert.match(result.reply, /食堂的菜最近是不是有点难吃？/);
   assert.match(result.reply, /味道不太稳定/);
   assert.doesNotMatch(result.reply, /优化流程|引导分流|学习和生活安排/);
+  assert.equal(fake.calls[0].tools, undefined);
+  assert.match(fake.calls[0].messages.at(-1).content, /intent/);
+  assert.match(fake.calls[0].messages.at(-1).content, /event/);
+});
+
+test('runCampusAgent lets the model semantically classify event drafts', async () => {
+  const fake = makeDraftClient(
+    JSON.stringify({
+      intent: 'event',
+      title: '运动会活动帖',
+      content: '想和大家分享一下运动会相关信息，欢迎感兴趣的同学一起参加、加油或在评论里补充安排。',
+      tags: ['活动'],
+    }),
+  );
+
+  const result = await runCampusAgent('帮我写一个运动会的帖子', {
+    getClient: () => fake,
+  });
+
+  assert.equal(fake.calls.length, 1);
+  assert.deepEqual(result.usedTools, ['draft_post']);
+  assert.match(result.reply, /运动会活动帖/);
+  assert.match(result.reply, /参加|加油|活动/);
+  assert.doesNotMatch(result.reply, /优化流程|引导分流|学习和生活安排|一点建议/);
   assert.equal(fake.calls[0].tools, undefined);
 });
