@@ -8,3 +8,10 @@ test('agent prompt tells the model to preserve post intent', async () => {
   assert.match(source, /互动帖/);
   assert.match(source, /不要把.*改写成建议/);
 });
+
+test('agent prompt tells the model its name is Xiaohe', async () => {
+  const source = await fs.readFile(new URL('./doubaoAgent.js', import.meta.url), 'utf8');
+
+  assert.match(source, /小和/);
+  assert.match(source, /名字/);
+});

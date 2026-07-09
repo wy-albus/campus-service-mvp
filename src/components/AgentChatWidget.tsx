@@ -36,7 +36,7 @@ export function AgentChatWidget() {
     {
       id: createMessageId(),
       role: 'assistant',
-      content: '你好，我是校园助手。可以帮你找网站功能、学习资源、论坛帖子，也能帮你写发帖草稿。',
+      content: '你好，我是小和。可以帮你找网站功能、学习资源、论坛帖子，也能帮你写发帖草稿。',
     },
   ]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -80,7 +80,7 @@ export function AgentChatWidget() {
         {
           id: createMessageId(),
           role: 'assistant',
-          content: '校园助手暂时不可用，请稍后再试。',
+          content: '小和暂时不可用，请稍后再试。',
           usedTools: [],
         },
       ]);
@@ -98,18 +98,18 @@ export function AgentChatWidget() {
   return (
     <div className={open ? 'agent-widget is-open' : 'agent-widget'}>
       {open && (
-        <section className="agent-panel" aria-label="校园智能导航助手">
+        <section className="agent-panel" aria-label="小和校园智能导航助手">
           <header className="agent-header">
             <div className="agent-title">
               <span className="agent-icon">
                 <Bot size={18} />
               </span>
               <div>
-                <strong>校园助手</strong>
+                <strong>小和</strong>
                 <span>智能导航</span>
               </div>
             </div>
-            <button className="agent-icon-button" type="button" onClick={() => setOpen(false)} aria-label="关闭校园助手">
+            <button className="agent-icon-button" type="button" onClick={() => setOpen(false)} aria-label="关闭小和">
               <X size={18} />
             </button>
           </header>
@@ -156,7 +156,7 @@ export function AgentChatWidget() {
               ref={inputRef}
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="问问校园助手..."
+              placeholder="问问小和..."
               maxLength={1000}
               disabled={loading}
             />
@@ -169,7 +169,7 @@ export function AgentChatWidget() {
 
       <button className="agent-toggle" type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
         <MessageCircle size={18} />
-        <span>校园助手</span>
+        <span>小和</span>
       </button>
     </div>
   );
