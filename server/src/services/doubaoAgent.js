@@ -164,7 +164,7 @@ function withTimeout(promise, timeoutMs, label) {
 }
 
 function isDraftRequest(message) {
-  return /草稿|帮我写|发帖|帖子.*写|委婉|标题/.test(String(message || ''));
+  return /(草稿|帮我写|帮忙写|写.*(帖子|帖|标题)|发(个|一个|一篇)?(帖子|帖)|帖子.*写|委婉|标题)/.test(String(message || ''));
 }
 
 export function summarizePostQueryIntent(message) {
@@ -355,7 +355,7 @@ function planLocalTool(message) {
     return { toolName: 'none', arguments: {}, safety: true };
   }
 
-  if (/草稿|帮我写|发帖|帖子.*写|委婉|标题/.test(text)) {
+  if (isDraftRequest(text)) {
     const tagMatch = text.match(/(吐槽|学习|活动|比赛|旅游|情感|美食|求助|经验分享)/);
     const topicMatch = text.match(/关于(.+?)(?:的|，|,|。|帖子|帖|$)/);
     const topic = topicMatch?.[1]?.trim() || extractDraftTopic(text);
@@ -447,6 +447,7 @@ function normalizeDraftModelResult(text) {
   const tags = rawTags.map((tag) => String(tag).trim()).filter(Boolean).slice(0, 3);
 
   return {
+    intent: typeof parsed.intent === 'string' ? parsed.intent.trim() : '',
     title: parsed.title.trim(),
     content: parsed.content.trim(),
     tags: tags.length > 0 ? tags : ['求助'],
@@ -456,15 +457,18 @@ function normalizeDraftModelResult(text) {
 async function runDraftModel(message, client, model, timeoutMs = DRAFT_MODEL_TIMEOUT_MS) {
   const prompt = `用户想让你帮忙写一篇校园论坛帖子草稿。
 
-请理解用户真实意图，而不是机械套模板。你需要判断它是互动帖、吐槽帖、求助帖、建议帖、经验分享帖或其他自然帖子。
+请先从语义上判断用户真实意图，而不是机械套模板。你需要判断它是 event、interaction、rant、help、suggestion、experience 或 other。
 
 要求：
 - 只写用户真正想发的帖子，不要把闲聊/提问/吐槽强行改成“建议帖”。
+- 用户提到运动会、社团、报名、征集、讲座、比赛、晚会等活动时，通常应判断为 event，并写成自然的活动通知、邀请或分享帖。
 - 不要编造“优化流程、引导分流、影响学习和生活安排”等用户没提到的内容。
 - 去掉“我想发帖、帮我写草稿、请你”等指令性外壳。
 - 语气自然，像高中生/校友在论坛里发帖。
 - 输出 JSON 对象，不要 Markdown，不要解释。
-- JSON 字段：title 字符串，content 字符串，tags 字符串数组。tags 只能从这些里面选 1-3 个：吐槽、学习、活动、比赛、旅游、情感、美食、求助、经验分享。
+- JSON 字段：intent 字符串，title 字符串，content 字符串，tags 字符串数组。
+- intent 只能从这些里面选 1 个：event、interaction、rant、help、suggestion、experience、other。
+- tags 只能从这些里面选 1-3 个：吐槽、学习、活动、比赛、旅游、情感、美食、求助、经验分享。
 
 用户输入：${message}`;
 
